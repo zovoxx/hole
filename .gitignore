@@ -1,0 +1,28 @@
+# Node / Cloudflare
+node_modules/
+.wrangler/
+.dev.vars*
+.env*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Blender backups and autosaves
+*.blend1
+*.blend2
+*.blend@
+
+# Local work and scratch (keep drafts out of git)
+work/
+scratch/
+tmp/
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

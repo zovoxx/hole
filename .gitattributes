@@ -1,2 +1,32 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binary files are stored as-is (no line-ending conversion).
+*.glb  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.webp binary
+*.ktx2 binary
+*.ogg  binary
+*.mp3  binary
+*.wasm binary
+
+# Git LFS: big SOURCE files only (not published). These lines come last so they win.
+# Never add LFS rules for public/: Cloudflare's build may deploy pointer files instead of the real ones.
+source/**/*.blend filter=lfs diff=lfs merge=lfs -text
+source/**/*.png   filter=lfs diff=lfs merge=lfs -text
+source/**/*.jpg   filter=lfs diff=lfs merge=lfs -text
+source/**/*.jpeg  filter=lfs diff=lfs merge=lfs -text
+source/**/*.webp  filter=lfs diff=lfs merge=lfs -text
+source/**/*.exr   filter=lfs diff=lfs merge=lfs -text
+source/**/*.glb   filter=lfs diff=lfs merge=lfs -text
+source/**/*.gltf  filter=lfs diff=lfs merge=lfs -text
+source/**/*.obj   filter=lfs diff=lfs merge=lfs -text
+source/**/*.fbx   filter=lfs diff=lfs merge=lfs -text
+source/**/*.ply   filter=lfs diff=lfs merge=lfs -text
+source/**/*.spz   filter=lfs diff=lfs merge=lfs -text
+source/**/*.wav   filter=lfs diff=lfs merge=lfs -text
+source/**/*.flac  filter=lfs diff=lfs merge=lfs -text
+source/**/*.mp3   filter=lfs diff=lfs merge=lfs -text
+source/**/*.ogg   filter=lfs diff=lfs merge=lfs -text
