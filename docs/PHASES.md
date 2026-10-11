@@ -7,13 +7,13 @@ ready.
 
 How a phase is run (read, pre-flight, save, test, push, report, log usage): see `CLAUDE.md`.
 
-Total estimate: 3 conto + 4 contoo phases, about 5.5 windows of usage.
+Total estimate: 3 conto + 4 contoo phases, about 5.7 windows of usage.
 
 | Phase | Goal | Est. usage |
 | --- | --- | --- |
 | Conto 1 | Meteor models: concepts → Pixal3D raw models + helper tools | ~80% |
 | Conto 2 | Meteors game-ready: PC/mobile GLBs, manifest, browser viewer | ~85% |
-| Conto 3 | Music, space textures, final check of all assets | ~65% |
+| Conto 3 | Music (4 intensity loops), space textures, final check of all assets | ~85% |
 | Contoo 1 | Fly: playable core loop on PC and phone | ~85% |
 | Contoo 2 | Danger: meteor types, distance doubt, explosions, gravity | ~85% |
 | Contoo 3 | Pressure: walls, difficulty curve, camera effects, sound | ~85% |
@@ -110,28 +110,30 @@ proves they load.
 **Tasks**
 
 1. Pre-flight: ComfyUI and Blender work; your ACE-Step and Z-Image workflow JSONs are uploaded.
-2. Music (ACE-Step 1.5 XL Turbo, instrumental): your design lists only sounds, so music is a quiet, dark,
-   slow deep-space ambient loop. 3–4 candidates for "shallow" (the blue-black start) and optionally "deep"
-   (red-black, denser, crossfaded in with difficulty). You listen and pick. Claude can't judge music by ear.
-   Cut seamless loops on bar boundaries (`tools/music_loop.py`), export OGG + MP3 (PC 192 kbps, mobile 96
-   kbps), loop points into the manifest. Skip this step if you decide the game has no music.
+2. Music (ACE-Step 1.5 XL Turbo, instrumental), **required and important**: exciting, driving music that
+   pumps more adrenaline the longer you survive. Make **4 intensity loops** (`music_1` calm-but-tense start →
+   `music_4` full adrenaline), all in the **same key and tempo** (e.g. dark electronic/synth, ~120–140 BPM,
+   rising energy: more drums, bass and layers per level) so the game can crossfade between them softly with
+   no audible switch. 3–4 candidates per level; you listen and pick (Claude can't judge music by ear). Cut
+   seamless loops on bar boundaries, all the same length in bars (`tools/music_loop.py`), export OGG + MP3
+   (PC 192 kbps, mobile 96 kbps), loop points and BPM into the manifest.
 3. Space textures (Z-Image Turbo, on pure black so brightness becomes alpha): 4 dust wisps, 2 big murky haze
    puffs, 1 explosion flash glow. `tools/make_sprites.py`: grayscale, alpha from brightness, soft edges (no
    square borders), WebP at PC and mobile sizes. The starfield itself stays procedural so it is perfectly
    even.
 4. Step 6, final pass: check every asset together (contact sheet of rocks and sprites over the game's dark
    background → `docs/checks/conto3_all.jpg`), fix anything off, write the final manifest.
-5. Viewer shows the sprites and has a button that plays the music loop. Run `check_public.py`, serve locally,
+5. Viewer shows the sprites and has a music player with a 1 → 4 intensity slider (soft crossfade). Run `check_public.py`, serve locally,
    console clean. Update STATUS with a short asset list, commit, push.
-6. Spare usage: start Contoo 1 (HUD and flight controls need no assets).
 
 **Done when**
 
-- In the viewer the music loops with no audible click or gap (or you chose no music).
+- In the viewer each music level loops with no click or gap, and a slider that crossfades level 1 → 4 sounds
+  like one track getting more intense, with no audible switch.
 - `docs/checks/conto3_all.jpg` shows dust, haze and flash as soft shapes with no hard square edges.
 - `check_public.py` passes; the viewer works on PC and phone; the manifest lists every asset.
 
-**Estimated usage:** ~65% (plus any head start on Contoo 1)
+**Estimated usage:** ~85%
 
 ---
 
@@ -212,7 +214,8 @@ restart.
    blue-black → red-black, thicker dust.
 3. Camera effects: handling rattle, explosion kick, gravity rumble + lean/roll up to ~25° + darker edge +
    slight stretch, near-miss kick. Smooth, stacked, capped; the HUD never moves.
-4. Audio: synthesized whoosh, rumble and boom; music loop(s) from the manifest; iOS audio unlock.
+4. Audio: synthesized whoosh, rumble and boom; the 4 music loops started in sync and crossfaded softly by
+   difficulty (equal-power, over several seconds, never a hard switch); iOS audio unlock.
 5. Tests and `check_public.py`.
 
 **Done when**
@@ -222,7 +225,8 @@ restart.
 - Over a long run space gets denser, faster and redder with no visible step.
 - Shakes feel like smooth wobbles; the cross, circle, timer and buttons never move; the lean near a massive
   meteor eases back afterwards.
-- You hear the whoosh, the rumble and the boom (and the music, if chosen).
+- You hear the whoosh, the rumble and the boom; the music gets more intense as the run goes on and you never
+  notice a switch.
 
 **Estimated usage:** ~85%
 

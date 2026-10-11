@@ -179,6 +179,11 @@ always at least one gap, sometimes more, wide enough to get through with the hea
 
 - Sounds: a near-miss whoosh, a gravity rumble and an explosion boom.
 
+## 10b. Music
+
+- Music is important. It is exciting and pumps more and more adrenaline as the run goes on.
+- Its intensity follows the difficulty. Changes between intensities are soft: you never hear a switch.
+
 ## 11. Difficulty
 
 - Difficulty depends only on time survived. It is one smooth curve with no levels or steps. It rises fast in

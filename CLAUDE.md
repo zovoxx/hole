@@ -31,7 +31,8 @@ into a hole.
    3 big rocks, explosion fragments). There are no characters or weapons.
 2. **Grounds** (TripoSplat): not used, there is no ground in space.
 3. **Animations** (Kimodo): not used, no characters; meteor motion is code.
-4. **Music**: ACE-Step 1.5 XL Turbo, seamless loops (optional, quiet ambience).
+4. **Music** (important): ACE-Step 1.5 XL Turbo, 4 exciting intensity loops in the same key/tempo, crossfaded
+   softly so the adrenaline rises as the run goes on.
 5. **Backgrounds**: Z-Image Turbo dust/haze/flash sprites. The starfield is procedural so it stays even.
 6. **Check and adjust in Blender**: export PC + mobile, verify by re-importing, write `public/assets/manifest.json`.
 

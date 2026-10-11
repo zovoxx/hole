@@ -130,8 +130,10 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 ## Audio
 
 - Unlock the `AudioContext` on the first tap/click/key (required on iOS).
-- Music (if used): looping `AudioBufferSourceNode` with `loopStart`/`loopEnd` from the manifest (avoids MP3
-  padding gaps). Optionally two loops (shallow, deep) crossfaded by difficulty.
+- Music is required: 4 intensity loops (same key, tempo and bar length). All 4 start at the same moment as
+  looping `AudioBufferSourceNode`s (`loopStart`/`loopEnd` from the manifest avoids MP3 padding gaps), each
+  with its own gain. Difficulty `D` maps to a level 1→4; gains follow an equal-power crossfade that moves
+  slowly (several seconds), so the music only ever gets more intense, never switches audibly.
 - Sounds are synthesized, no files: whoosh = band-passed noise sweep panned to the passing side; rumble =
   low-passed brown noise plus a 30–50 Hz tone, gain from pull; boom = noise burst plus a falling low tone,
   volume from distance.
@@ -159,7 +161,7 @@ All runtime files live in `public/assets/`. File names are lowercase, no spaces.
 | Explosion fragments (`frag_01`…) | 4 shards | ~400 tris, one shared 1024² set | ~150 tris, shared 512² |
 | Dust/haze sprites (`dust_01`…, `haze_01`…) | 4 + 2 | WebP 1024² with alpha | WebP 512² |
 | Flash sprite (`flash_01`) | 1 | WebP 512² | WebP 256² |
-| Music loops (optional) | 1–2 | OGG + MP3, 192 kbps | OGG + MP3, 96 kbps |
+| Music intensity loops (`music_1`…`music_4`) | 4 | OGG + MP3, 192 kbps | OGG + MP3, 96 kbps |
 
 - Rocks: GLB, centered, bounding radius 1 m, +Y up in glTF. Base color is neutral gray (the game tints it),
   plus normal and ORM maps baked from the Pixal3D high-poly. Textures embedded as WebP if Blender's exporter
@@ -193,10 +195,10 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
     "flash": [ { "id": "flash_01", "pc": "textures/pc/flash_01.webp", "mobile": "textures/mobile/flash_01.webp" } ]
   },
   "music": [
-    { "id": "shallow",
-      "pc": { "ogg": "music/pc/shallow.ogg", "mp3": "music/pc/shallow.mp3" },
-      "mobile": { "ogg": "music/mobile/shallow.ogg", "mp3": "music/mobile/shallow.mp3" },
-      "loopStart": 0.0, "loopEnd": 96.0 }
+    { "id": "music_1", "level": 1, "bpm": 128,
+      "pc": { "ogg": "music/pc/music_1.ogg", "mp3": "music/pc/music_1.mp3" },
+      "mobile": { "ogg": "music/mobile/music_1.ogg", "mp3": "music/mobile/music_1.mp3" },
+      "loopStart": 0.0, "loopEnd": 60.0 }
   ]
 }
 ```

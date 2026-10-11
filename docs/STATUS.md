@@ -10,11 +10,15 @@
 
 - **Conto 1: Meteor models.** Bring the Z-Image Turbo and Pixal3D workflow JSONs.
 
+## Decisions
+
+- Music is important: exciting, more adrenaline as the run goes on, 4 intensity loops with soft crossfades
+  (Conto 3 resized to ~85%).
+
 ## Open questions / assumptions
 
 - The Cloudflare Worker is assumed to be named `hole` (`wrangler.jsonc`). If the dashboard uses another name,
   change `name` there.
-- Music isn't in the design (only sounds). Conto 3 plans one quiet ambient loop; it can be skipped.
 - Conto steps 2 (TripoSplat grounds) and 3 (Kimodo animations) are skipped: no ground, no characters.
 
 ## Assets
