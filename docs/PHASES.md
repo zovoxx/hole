@@ -158,7 +158,12 @@ restart.
    instanced.
 7. Collision → short hit effect → game over.
 8. First version of the difficulty curve (speed and meteor count).
-9. Tests: Playwright on desktop and mobile emulation (touch, portrait and landscape), no console errors;
+9. Owner's wishes (DESIGN §2, TECH "Devices"): (a) a double or fast tap never zooms the page on Safari or
+   Chrome (viewport, `touch-action: none`, `preventDefault` on touch/dblclick/`gesturestart`); (b) Safari's
+   fullscreen warning in the middle of the screen shows up as rarely as possible (fullscreen only from the
+   start-screen button, stay in it across restarts, still-thumb button controls, no swipes, no text inputs).
+10. Tests: Playwright on desktop and mobile emulation (touch, portrait and landscape), no console errors, a
+   fast double tap on a button and on empty screen doesn't zoom (`visualViewport.scale` stays 1);
    `check_public.py`.
 
 **Done when** (test on the deployed site)
@@ -170,6 +175,9 @@ restart.
 - Rocks fade in far away, never pop, never come from behind; turning all the way around shows space already
   full.
 - A hit ends the run; the game-over screen shows time and best time; any key or tap restarts.
+- Tapping twice or fast on the phone (Safari and Chrome) never zooms the page.
+- On iPad Safari in fullscreen, several runs in a row (with restarts) go by without the fullscreen warning in
+  the middle of the screen, or it comes up far less often than before.
 
 **Estimated usage:** ~85%
 

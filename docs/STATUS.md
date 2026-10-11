@@ -58,7 +58,9 @@
 
 ## Next
 
-- **Contoo 1: Fly.** Runs in the cloud from the repo only (push first). Say "make contoo phase 1".
+- **Contoo 1: Fly.** Runs in the cloud from the repo only (push first). Say "make contoo phase 1". Includes
+  the owner's two wishes: no zoom on double/fast taps, and as few Safari fullscreen warnings as possible
+  (PHASES Contoo 1 task 9, TECH "Devices").
 - After the push: try `/dev/music.html` and `/dev/viewer.html` on the deployed site on your phone and PC.
 
 ## Decisions

@@ -168,6 +168,20 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 - Orientation: no lock. Everything is sized from `min(width, height)` and recomputed on resize.
 - Fullscreen: Fullscreen API (with the `webkit` prefix). iPhone Safari has no element fullscreen, so there the
   button is hidden and a web app manifest (`display: fullscreen`) lets "Add to Home Screen" run fullscreen.
+- No zoom (owner's wish): viewport `width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no,
+  viewport-fit=cover`; `touch-action: none` on the canvas, buttons and screens (`manipulation` is not enough for
+  fast repeated taps); `-webkit-user-select: none`, `-webkit-touch-callout: none`,
+  `-webkit-tap-highlight-color: transparent`; `preventDefault` on `touchstart`/`touchmove` of game elements
+  (passive: false), on `dblclick`, and on iOS `gesturestart` / `gesturechange` (pinch), because iOS Safari
+  ignores `user-scalable=no`. Test fast double taps on the buttons and on empty screen on iPhone and Android.
+- Fewer Safari fullscreen warnings (owner's wish; iPad Safari watches touches and keys in element fullscreen
+  and shows a warning in the middle of the screen, and has an entry banner): ask for fullscreen only from the
+  fullscreen button on the start screen, never automatically and never mid-run; stay in fullscreen across
+  game over and restart (never exit and re-enter); controls are held buttons where thumbs stay still (no
+  swipe or drag controls, fast-moving touches raise Safari's suspicion score); no text inputs; on iPad with a
+  hardware keyboard, typing keys in fullscreen can trigger the warning, so test WASD there and, if it does,
+  show the keyboard hint only outside fullscreen. Keep the "Add to Home Screen" hint (a home-screen app has no
+  warnings). Test on an iPad: several full runs in fullscreen without a warning.
 - Pixel ratio capped (about 1.5 on mobile, 2 on PC); adaptive quality if frame time stays high.
 - Best time in `localStorage` (wrapped in try/catch).
 

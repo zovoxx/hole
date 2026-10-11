@@ -24,6 +24,9 @@ into a hole.
 - In the browser, on iPad, phone and PC.
 - Landscape or portrait, whichever the player wants.
 - A fullscreen button.
+- Tapping fast or twice never zooms the page (Safari and Chrome zoom in on a double tap; that must not happen).
+- In fullscreen, Safari sometimes shows its fullscreen warning in the middle of the screen during a run. There is
+  no full fix in Safari, but the game should trigger it as rarely as possible.
 
 ## 3. Screen
 
