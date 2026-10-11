@@ -7,7 +7,7 @@ import { Music, unlockAudio, musicFormat } from '../game/audio.js';
 
 const $ = (id) => document.getElementById(id);
 const set = pickAssetSet();
-const fx = { key: true, reverb: true, sub: true, drone: true };
+const fx = { dip: true, reverb: true, sub: true, drone: true };
 let audio = null;     // { ctx, music }
 let runTime = 0;      // seconds of "run"
 let speed = 1;
@@ -17,9 +17,10 @@ let last = 0;
 function depthCfg() {
   const d = MUSIC.depth;
   const zero = (a) => a.map(() => 0);
-  return { ...d, maxSemitones: fx.key ? d.maxSemitones : 0, reverb: fx.reverb ? d.reverb : zero(d.reverb),
-           subDb: fx.sub ? d.subDb : zero(d.subDb), drone: fx.drone ? d.drone : zero(d.drone) };
+  return { ...d, reverb: fx.reverb ? d.reverb : zero(d.reverb), subDb: fx.sub ? d.subDb : zero(d.subDb),
+           drone: fx.drone ? d.drone : zero(d.drone) };
 }
+const dipHz = () => (fx.dip ? MUSIC.dipHz : 20000);
 
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
@@ -27,7 +28,8 @@ $('play').addEventListener('click', async () => {
   if (!audio) {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     unlockAudio(ctx);
-    const music = new Music(ctx, { fadeSeconds: MUSIC.fadeSeconds, volume: MUSIC.volume, depth: depthCfg() });
+    const music = new Music(ctx, { fadeSeconds: MUSIC.fadeSeconds, volume: MUSIC.volume, depth: depthCfg(),
+                                   dipHz: dipHz() });
     audio = { ctx, music };
     $('msg').textContent = `loading ${set} ${musicFormat()}…`;
     const manifest = await loadManifest();
@@ -41,8 +43,6 @@ $('play').addEventListener('click', async () => {
   if (m.playing) {
     m.stop(0.5);
   } else {
-    m.depth = 0;
-    m.rate = 1;
     m.start();
     last = performance.now();
   }
@@ -62,19 +62,20 @@ for (const b of document.querySelectorAll('[data-fx]')) {
     b.classList.toggle('on', fx[b.dataset.fx]);
     if (audio) {
       audio.music.depthCfg = depthCfg();
-      if (audio.music.playing) audio.music.setDepth(audio.music.depth, audio.music.nextBarTime(1), 1);
+      audio.music.dipHz = dipHz();
+      if (audio.music.playing) audio.music.setDepth(audio.music.depth, audio.music.dip, 1);
     }
   });
 }
 $('end').addEventListener('click', () => {
   const c = MUSIC.cycleSeconds;
-  runTime = Math.floor(runTime / c) * c + c - 15;
+  runTime = Math.floor(runTime / c) * c + c - MUSIC.descentSeconds - 15;
 });
 $('restart').addEventListener('click', () => {
   runTime = 0;
   if (audio?.music.playing) {
     audio.music.stop(0.3);
-    setTimeout(() => { audio.music.depth = 0; audio.music.rate = 1; audio.music.start(); }, 400);
+    setTimeout(() => { audio.music.depth = 0; audio.music.dip = 0; audio.music.intensity = 1; audio.music.start(); }, 400);
   }
 });
 
@@ -87,12 +88,11 @@ function tick() {
     runTime += dt * speed;
     const m = audio.music;
     const plan = m.follow(runTime, MUSIC);
-    const semis = Math.round(12 * Math.log2(m.rate));
     $('read').textContent = [
       `run      ${fmt(runTime)}   (${speed}×)`,
-      `cycle    ${plan.cycle + 1}   depth ${m.depth}`,
+      `cycle    ${plan.cycle + 1}   depth ${m.depth.toFixed(2)}${plan.descending ? '   sinking…' : ''}`,
       `level    ${m.intensity.toFixed(2)}`,
-      `key      +${semis} semitone${semis === 1 ? '' : 's'}   tempo ${(128 * m.rate).toFixed(1)} BPM`,
+      `filter   ${Math.round(m.lowpass.frequency.value)} Hz`,
       `loop     ${m.position().toFixed(1)} s`,
     ].join('\n');
     const g = m.gainsFor(m.intensity);

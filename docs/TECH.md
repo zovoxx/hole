@@ -141,11 +141,12 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   moves slowly (`MUSIC.fadeSeconds` in `config.js`), so changes are never heard as a switch. OGG (Vorbis)
   where the browser plays it, else MP3 (Safari).
 - Music cycle (the owner's rule): the game calls `music.follow(runSeconds, MUSIC)` every frame. Level climbs
-  1 → 4 over `MUSIC.cycleSeconds` (300 s), then drops back to 1 on a bar line and the next cycle is one step
-  deeper (`MUSIC.depth`, capped at depth 3): key and tempo up a semitone at the drop (up to +2, 128 → 143.7
-  BPM; `playbackRate` on all loops, so they stay in sync), more reverb (generated impulse), more sub (low
-  shelf), and a quiet breathing drone on the tonal centre (C#2; the loops measure as C#, not the requested D
-  minor). Try it on `/dev/music.html` (speed 1×/10×/30×, skip to a cycle end, effects on/off).
+  1 → 4 over `MUSIC.cycleSeconds` (300 s); in the last `descentSeconds` (30 s) it sinks smoothly back to 1
+  (levels crossfade down, a low-pass filter closes to `dipHz` and opens again, the reverb swells) while the
+  next depth eases in (`MUSIC.depth`, capped at 3): more reverb (generated impulse), more sub (low shelf) and
+  a quiet breathing drone on the tonal centre (C#2; the loops measure as C#, not the requested D minor).
+  Nothing switches at once (an earlier version jumped a semitone at a bar line; the owner found the change
+  too abrupt). Try it on `/dev/music.html` (speed 1×/10×/30×, jump to before the descent, effects on/off).
 - Every music file holds its loop plus 0.25 s of cyclic padding on both sides (the loop's end before it, its
   start after it). Whatever offset a decoder adds (MP3 encoder delay that one browser trims and another
   doesn't) only shifts the window inside cyclic audio, so the loop stays seamless and the 4 levels stay in

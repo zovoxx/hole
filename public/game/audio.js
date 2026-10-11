@@ -1,9 +1,10 @@
 // Audio. Conto 3 starts it with the music: the intensity loops from the manifest, all started at the same
 // moment and crossfaded by a continuous intensity (1 = calm start ... 4 = full adrenaline). The loops share
 // tempo, key and bar count, so they stay in sync forever; intensity only moves their gains.
-// Over a run the music climbs 1 -> 4 in one cycle (MUSIC.cycleSeconds), drops back to 1 on a bar line and
-// starts the next cycle one step deeper: a semitone higher and faster, more reverb, more sub, a low drone on
-// the tonal centre (MUSIC.depth). Contoo adds the synthesized sounds (whoosh, rumble, boom).
+// Over a run the music climbs 1 -> 4 in one cycle (MUSIC.cycleSeconds). In the cycle's last descentSeconds it
+// sinks smoothly back to 1: the levels crossfade down, a low-pass filter closes and opens again and the reverb
+// swells, while the next depth eases in (more reverb, more sub, a low drone on the tonal centre). Nothing ever
+// switches at once. Contoo adds the synthesized sounds (whoosh, rumble, boom).
 const ASSETS_URL = new URL('../assets/', import.meta.url);  // same as loader.js; kept here so this file stands alone
 
 // iOS and Chrome start an AudioContext suspended until a tap/click/key; call this from that event.
@@ -21,33 +22,48 @@ export function musicFormat() {
   return a.canPlayType('audio/ogg; codecs="vorbis"') ? 'ogg' : 'mp3';
 }
 
-// Where the music is at run time t (seconds): cycle number, depth (capped) and level 1..4 within the cycle.
+// Where the music is at run time t (seconds): cycle, level 1..4, filter dip 0..1 and depth (fractional, capped).
 export function musicPlan(t, cfg) {
-  const k = Math.max(0, Math.floor(t / cfg.cycleSeconds));
-  const p = (t - k * cfg.cycleSeconds) / cfg.cycleSeconds;
-  return { cycle: k, depth: Math.min(k, cfg.depth?.maxDepth ?? 0), level: 1 + 3 * p ** (cfg.rampPower ?? 1) };
+  const T = cfg.cycleSeconds;
+  const D = Math.min(cfg.descentSeconds ?? 0, T / 2);
+  const k = Math.max(0, Math.floor(t / T));
+  const u = t - k * T;
+  let level;
+  let dip = 0;
+  let depth = k;
+  if (u < T - D) {
+    level = 1 + 3 * (u / (T - D)) ** (cfg.rampPower ?? 1);
+  } else {
+    const q = (u - (T - D)) / D;
+    const e = 0.5 - 0.5 * Math.cos(Math.PI * q);  // smooth 0 -> 1
+    level = 4 - 3 * e;
+    dip = Math.sin(Math.PI * q);
+    depth = k + e;
+  }
+  return { cycle: k, level, dip, depth: Math.min(depth, cfg.depth?.maxDepth ?? 0), descending: dip > 0 };
 }
 
 export class Music {
   // fadeSeconds: how long a gain change takes to mostly settle (time constant = fadeSeconds / 3).
-  // depth: MUSIC.depth from config.js (null = no deepening).
-  constructor(ctx, { fadeSeconds = 6, volume = 0.8, depth = null } = {}) {
+  // depth: MUSIC.depth from config.js (null = no deepening); dipHz: lowest filter cutoff in a descent.
+  constructor(ctx, { fadeSeconds = 6, volume = 0.8, depth = null, dipHz = 700 } = {}) {
     this.ctx = ctx;
     this.fadeSeconds = fadeSeconds;
     this.depthCfg = depth;
+    this.dipHz = dipHz;
     this.loops = [];        // { id, level, buffer, gain, loopStart, loopEnd, rhoNext }
     this.sources = [];
     this.intensity = 1;
     this.depth = 0;
-    this.rate = 1;
-    this.barSeconds = 1.875;  // from the manifest (bpm, beatsPerBar)
-    this.anchors = [];        // { time, pos, rate }: loop position bookkeeping across rate changes
-    this.cycle = null;
-    this.holdUntil = 0;
+    this.dip = 0;
     this.playing = false;
-    // loop gains -> mix -> sub shelf -> out (volume) -> limiter -> speakers; mix -> reverb -> wet -> out;
-    // drone -> drone gain -> out (and a little into the reverb)
+    // loop gains -> mix -> low-pass -> sub shelf -> out (volume) -> limiter -> speakers;
+    // low-pass -> reverb -> wet -> out; drone -> drone gain -> out (and a little into the reverb)
     this.mix = ctx.createGain();
+    this.lowpass = ctx.createBiquadFilter();
+    this.lowpass.type = 'lowpass';
+    this.lowpass.frequency.value = 20000;
+    this.lowpass.Q.value = 0.7;
     this.sub = ctx.createBiquadFilter();
     this.sub.type = 'lowshelf';
     this.sub.frequency.value = 110;
@@ -64,8 +80,8 @@ export class Music {
     this.reverb.buffer = impulse(ctx, 3.2, 2.6);
     this.wet = ctx.createGain();
     this.wet.gain.value = 0;
-    this.mix.connect(this.sub).connect(this.out);
-    this.mix.connect(this.reverb).connect(this.wet).connect(this.out);
+    this.mix.connect(this.lowpass).connect(this.sub).connect(this.out);
+    this.lowpass.connect(this.reverb).connect(this.wet).connect(this.out);
     this.out.connect(this.limiter).connect(ctx.destination);
     this.drone = null;
   }
@@ -73,7 +89,6 @@ export class Music {
   // Loads every loop of the set ('pc' or 'mobile'); falls back to MP3 if the OGG fails to decode.
   async load(manifest, set, onProgress = () => {}, baseUrl = ASSETS_URL) {
     const list = [...(manifest.music ?? [])].sort((a, b) => a.level - b.level);
-    if (list[0]?.bpm) this.barSeconds = (60 / list[0].bpm) * (list[0].beatsPerBar ?? 4);
     const fmt = musicFormat();
     let done = 0;
     this.loops = await Promise.all(list.map(async (m) => {
@@ -102,7 +117,7 @@ export class Music {
   start(delay = 0.05) {
     if (this.playing) return;
     const when = this.ctx.currentTime + delay;
-    this.anchors = [{ time: when, pos: 0, rate: this.rate }];
+    this.startedAt = when;
     this.sources = this.loops.map((l) => {
       if (!l.buffer) return null;
       const src = this.ctx.createBufferSource();
@@ -110,15 +125,14 @@ export class Music {
       src.loop = true;
       src.loopStart = l.loopStart;
       src.loopEnd = l.loopEnd;
-      src.playbackRate.value = this.rate;
       src.connect(l.gain);
       src.start(when, l.loopStart);
       return src;
     });
-    if (this.depthCfg) this.drone = makeDrone(this.ctx, this.depthCfg.droneHz * this.rate, this.out, this.reverb);
+    if (this.depthCfg) this.drone = makeDrone(this.ctx, this.depthCfg.droneHz, this.out, this.reverb);
     this.playing = true;
     this.setIntensity(this.intensity, 0);
-    this.setDepth(this.depth, when, 0);
+    this.setDepth(this.depth, this.dip, 0.05);
   }
 
   stop(fade = 0.5) {
@@ -132,12 +146,11 @@ export class Music {
     if (this.drone) {
       this.drone.gain.gain.cancelScheduledValues(t);
       this.drone.gain.gain.setTargetAtTime(0, t, fade / 3);
-      for (const o of this.drone.oscs) o.osc.stop(t + fade + 0.1);
+      for (const o of this.drone.oscs) o.stop(t + fade + 0.1);
       this.drone.lfo.stop(t + fade + 0.1);
       this.drone = null;
     }
     this.sources = [];
-    this.cycle = null;
     this.playing = false;
   }
 
@@ -160,68 +173,47 @@ export class Music {
     return g;
   }
 
-  // seconds: how long the move takes (default fadeSeconds); 0 jumps. `at`: when it starts.
-  setIntensity(x, seconds = this.fadeSeconds, at = this.ctx.currentTime) {
+  // seconds: how long the move takes (default fadeSeconds); 0 jumps.
+  setIntensity(x, seconds = this.fadeSeconds) {
     this.intensity = x;
+    const t = this.ctx.currentTime;
     this.gainsFor(x).forEach((v, k) => {
       const p = this.loops[k].gain.gain;
-      p.cancelScheduledValues(at);
-      if (seconds <= 0) p.setValueAtTime(v, at);
-      else p.setTargetAtTime(v, at, seconds / 3);
+      p.cancelScheduledValues(t);
+      if (seconds <= 0) p.setValueAtTime(v, t);
+      else p.setTargetAtTime(v, t, seconds / 3);
     });
   }
 
-  // Depth d (0 = as generated): key and tempo up by semitones, more reverb, more sub, more drone. The key and
-  // tempo change lands exactly at `when` (use a bar line); the rest eases in over `ease` seconds.
-  setDepth(d, when = this.ctx.currentTime, ease = 4) {
+  // Depth d (fractional, 0 = as generated) and filter dip (0 = open, 1 = closed to dipHz); both glide.
+  setDepth(d, dip = 0, glide = 0.5) {
     const c = this.depthCfg;
-    if (!c) return;
+    const t = this.ctx.currentTime;
+    this.dip = dip;
+    const hz = Math.exp(Math.log(20000) + (Math.log(this.dipHz) - Math.log(20000)) * dip);
+    this.lowpass.frequency.setTargetAtTime(hz, t, glide);
+    if (!c) {
+      this.wet.gain.setTargetAtTime(0.25 * dip, t, glide);
+      return;
+    }
     d = Math.max(0, Math.min(d, c.maxDepth));
-    const pick = (arr) => arr[Math.min(d, arr.length - 1)];
-    const rate = 2 ** (Math.min(d * c.semitonesPerCycle, c.maxSemitones) / 12);
-    if (this.playing && rate !== this.anchors[this.anchors.length - 1].rate) {
-      this.anchors.push({ time: when, pos: this.positionAt(when), rate });
-      while (this.anchors.length > 2 && this.anchors[1].time < this.ctx.currentTime) this.anchors.shift();
-    }
-    for (const s of this.sources) s?.playbackRate.setValueAtTime(rate, when);
-    const tc = Math.max(0.01, ease / 3);
-    this.wet.gain.setTargetAtTime(pick(c.reverb), when, tc);
-    this.sub.gain.setTargetAtTime(pick(c.subDb), when, tc);
-    if (this.drone) {
-      this.drone.gain.gain.setTargetAtTime(pick(c.drone), when, Math.max(tc, 1));
-      for (const o of this.drone.oscs) o.osc.frequency.setValueAtTime(c.droneHz * o.mul * rate, when);
-    }
     this.depth = d;
-    this.rate = rate;
+    const at = (arr) => {
+      const i = Math.min(Math.floor(d), arr.length - 1);
+      const j = Math.min(i + 1, arr.length - 1);
+      return arr[i] + (arr[j] - arr[i]) * (d - Math.floor(d));
+    };
+    this.wet.gain.setTargetAtTime(at(c.reverb) + 0.25 * dip, t, glide);
+    this.sub.gain.setTargetAtTime(at(c.subDb), t, glide);
+    if (this.drone) this.drone.gain.gain.setTargetAtTime(at(c.drone), t, Math.max(glide, 1));
   }
 
-  // Next bar line (in groups of `bars`) at least `ahead` seconds from now, as AudioContext time.
-  nextBarTime(bars = 2, ahead = 0.3) {
-    const now = this.ctx.currentTime + ahead;
-    const len = this.barSeconds * bars;
-    const pos = this.positionAt(now);
-    const rate = this.rateAt(now);
-    return now + (Math.ceil(pos / len - 1e-6) * len - pos) / rate;
-  }
-
-  // Drives the music from the run time t (seconds); call every frame. At a new cycle the music drops back to
-  // level 1, fading out over `drop` seconds so the drop and the deeper key land together on a bar line.
-  follow(t, cfg, drop = 1.2) {
+  // Drives the music from the run time t (seconds); call every frame (or a few times a second).
+  follow(t, cfg) {
     const plan = musicPlan(t, cfg);
     if (!this.playing) return plan;
-    if (this.cycle === null) {
-      this.cycle = plan.cycle;
-      this.setDepth(plan.depth, this.ctx.currentTime, 0.5);
-      this.setIntensity(plan.level, 0.5);
-    } else if (plan.cycle !== this.cycle) {
-      this.cycle = plan.cycle;
-      const T = this.nextBarTime(2, drop + 0.2);
-      this.setIntensity(1, drop, T - drop);
-      this.setDepth(plan.depth, T);
-      this.holdUntil = T + 0.5;
-    } else if (this.ctx.currentTime >= this.holdUntil && Math.abs(plan.level - this.intensity) > 0.002) {
-      this.setIntensity(plan.level);
-    }
+    if (Math.abs(plan.level - this.intensity) > 0.002) this.setIntensity(plan.level, plan.descending ? 2 : this.fadeSeconds);
+    if (Math.abs(plan.depth - this.depth) > 0.002 || Math.abs(plan.dip - this.dip) > 0.002) this.setDepth(plan.depth, plan.dip);
     return plan;
   }
 
@@ -229,24 +221,12 @@ export class Music {
     this.out.gain.setTargetAtTime(v, this.ctx.currentTime, seconds / 3);
   }
 
-  rateAt(t) {
-    let a = this.anchors[0];
-    for (const x of this.anchors) if (x.time <= t) a = x;
-    return a?.rate ?? this.rate;
-  }
-
-  // Loop position (seconds from loopStart, in loop time) at AudioContext time t.
-  positionAt(t = this.ctx.currentTime) {
-    const l = this.loops[0];
-    if (!this.playing || !l?.buffer || !this.anchors.length) return 0;
-    let a = this.anchors[0];
-    for (const x of this.anchors) if (x.time <= t) a = x;
-    const len = l.loopEnd - l.loopStart;
-    return (((a.pos + (t - a.time) * a.rate) % len) + len) % len;
-  }
-
+  // Position in the loop (seconds from loopStart), for display.
   position() {
-    return this.positionAt();
+    const l = this.loops[0];
+    if (!this.playing || !l?.buffer) return 0;
+    const len = l.loopEnd - l.loopStart;
+    return (((this.ctx.currentTime - this.startedAt) % len) + len) % len;
   }
 }
 
@@ -288,7 +268,7 @@ function makeDrone(ctx, hz, out, reverb) {
       g.gain.value = amp;
       osc.connect(g).connect(lp);
       osc.start();
-      return { osc, mul };
+      return osc;
     });
   lp.connect(gain);
   gain.connect(out);
