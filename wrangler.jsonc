@@ -1,0 +1,9 @@
+// Cloudflare Workers static assets: serves everything in ./public as-is.
+// No server code. "name" must match the Worker connected in the Cloudflare dashboard.
+{
+  "name": "hole",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./public"
+  }
+}
