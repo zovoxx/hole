@@ -47,17 +47,26 @@ go in a permanent folder (`%USERPROFILE%\Documents\HoleWork\`), never in Temp.
 - One GPU job at a time; free VRAM between model families. Stop Kimodo before Pixal3D/TripoSplat jobs.
 - Pixal3D can run out of VRAM while decoding textures: free VRAM and resubmit.
 - No Eevee while ComfyUI is working. Check renders use Cycles on the CPU.
-- Pixal3D meshes often have tiny holes. For low-poly versions: remesh first, then decimate, then bake textures
-  from the high-poly model.
+- Pixal3D meshes are thin double-walled shells with holes (the workflow's UDF remesh), not solids. Blender's
+  voxel remesh keeps both walls on most of them, and its collapse decimation stalls on very dense meshes.
+  Use `tools/mesh_tool.py` (venv with `tools/requirements-mesh.txt`): `solid` makes a watertight outer
+  surface, `decimate` is pymeshlab quadric. Then bake textures from the raw model (`tools/blender_meteors.py`).
+- Pixal3D's AO channel is garbage (0 or 1 per patch): bake AO in Blender. Its roughness is a constant 0.84.
+- Bakes: `mesh.materials.clear()` resets face material indices; split (sharp) normals need a bake cage;
+  smooth-shaded n-gon caps bake radial gradients. Smart UV in background mode works, but `pack_islands`
+  leaves free space: rescale the UVs afterwards.
 - Look at check renders of every asset before calling it done.
 - Z-Image Turbo barely changes the composition between seeds: get variety from explicit shape words in the
   prompt, not from more seeds. Say "floating in mid-air, no ground, no cast shadow" or rocks sit on a floor.
 - Pixal3D guesses depth from one view: a flat slab seen from above came back as a thick boulder. Pick concepts
   that show the thin side, and check the extents in the `blender_check.py` report.
 - Timings on the laptop: Z-Image ~20 s per 1024² image; Pixal3D ~4–7 min per model (200k faces, 2048
-  textures); `blender_check.py` ~10 s per model.
+  textures); `blender_check.py` ~10 s per model; `blender_meteors.py build` ~40–95 s per rock (PC + mobile).
 - Laptop tools: `git` is GitHub Desktop's bundled one (`%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`,
-  not on PATH). System Python has no numpy/Pillow, so image work runs in Blender's Python (`blender -b -P`).
+  not on PATH). System Python has no numpy/Pillow, so image work runs in Blender's Python (`blender -b -P`);
+  mesh work runs in the venv `%USERPROFILE%\Documents\HoleWork\venv` (numpy, scipy, scikit-image, pymeshlab).
+- Local test server: `python -m http.server 8000 -d public`. Browsers cache the ES modules: force a reload
+  after editing them.
 
 ## Folder layout
 

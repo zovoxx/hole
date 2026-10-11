@@ -370,4 +370,5 @@ def main():
     (check_models if args.mode == "models" else check_images)(args)
 
 
-main()
+if __name__ == "__main__":  # importable by tools/blender_meteors.py
+    main()

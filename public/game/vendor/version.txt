@@ -1,0 +1,5 @@
+three.js 0.186.1 (npm package 'three', sha1 6d50f70c2c437f844179bbb56d6f5b774e1ca38a). MIT license: license.txt
+build/three.module.js, build/three.core.js: unchanged.
+addons/: examples/jsm files renamed to lowercase for Cloudflare (loaders/GLTFLoader.js -> loaders/gltfloader.js,
+utils/BufferGeometryUtils.js -> utils/buffergeometryutils.js, utils/SkeletonUtils.js -> utils/skeletonutils.js);
+the two '../utils/' imports in gltfloader.js point at the lowercase names. Nothing else changed.

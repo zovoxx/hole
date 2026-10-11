@@ -5,8 +5,11 @@ something works better, and update this file when you do. All numbers are starti
 
 ## Stack
 
-- **three.js 0.186.x**, vendored into `public/game/vendor/` (the `three.module.min.js` build plus only the
-  addons we use, e.g. `GLTFLoader`). Pin the exact version in `public/game/vendor/version.txt`.
+- **three.js 0.186.1**, vendored into `public/game/vendor/`: `three.module.js` + `three.core.js` (the npm
+  package no longer ships `.min.js` builds; Cloudflare compresses them) plus only the addons we use under
+  `addons/`, renamed to lowercase (`addons/loaders/gltfloader.js` and the two utils it imports). Import map:
+  `"three"` → `game/vendor/three.module.js`, `"three/addons/"` → `game/vendor/addons/`. Version, checksum and
+  the renames are in `public/game/vendor/version.txt`.
 - Plain ES modules and an import map in `index.html`. **No build step**, no npm packages at runtime.
   `public/` is deployed exactly as it is in git.
 - WebAudio for all sound. DOM/CSS for the HUD and screens.
@@ -158,15 +161,19 @@ All runtime files live in `public/assets/`. File names are lowercase, no spaces.
 | --- | --- | --- | --- |
 | Small rocks (`rock_01`…) | 8 shapes | ~2,500 tris, 1024² textures | ~800 tris, 512² textures |
 | Big rocks (`big_01`…), used for big and massive | 3 shapes | ~10,000 tris, 2048² | ~3,000 tris, 1024² |
-| Explosion fragments (`frag_01`…) | 4 shards | ~400 tris, one shared 1024² set | ~150 tris, shared 512² |
+| Explosion fragments (`frag_01`…) | 4 shards | ~400 tris, 512² each | ~150 tris, 256² each |
 | Dust/haze sprites (`dust_01`…, `haze_01`…) | 4 + 2 | WebP 1024² with alpha | WebP 512² |
 | Flash sprite (`flash_01`) | 1 | WebP 512² | WebP 256² |
 | Music intensity loops (`music_1`…`music_4`) | 4 | OGG + MP3, 192 kbps | OGG + MP3, 96 kbps |
 
-- Rocks: GLB, centered, bounding radius 1 m, +Y up in glTF. Base color is neutral gray (the game tints it),
-  plus normal and ORM maps baked from the Pixal3D high-poly. Textures embedded as WebP if Blender's exporter
-  allows it, else JPEG. No mesh compression is needed at these triangle counts, so no decoder files.
-- Every file is far below the 25 MiB limit; the whole set should stay under ~15 MB (PC) and ~5 MB (mobile).
+- Rocks: GLB, centered, bounding radius 1 m, +Y up in glTF, vertex tangents. Base color is neutral gray with
+  the same median on every rock (the game tints it), plus normal and ORM maps (AO, roughness 0.85, metal 0)
+  baked from the Pixal3D high-poly. Textures embedded as WebP (`EXT_texture_webp`, required; three.js
+  supports it). No mesh compression is needed at these triangle counts, so no decoder files.
+- Fragments: same format; flat broken faces with sharp (split) normals. One GLB per fragment.
+- Every file is far below the 25 MiB limit; the meteor set is 5.7 MiB (PC) and 2.2 MiB (mobile).
+- How they are made: `tools/blender_meteors.py` (see its docstring), mesh repair/decimation in
+  `tools/mesh_tool.py`, manifest by `tools/write_manifest.py`, check sheet `docs/checks/conto2_meteors.jpg`.
 
 ## Asset manifest (`public/assets/manifest.json`)
 
@@ -178,15 +185,13 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
   "meteors": {
     "small": [
       { "id": "rock_01", "pc": "meteors/pc/rock_01.glb", "mobile": "meteors/mobile/rock_01.glb",
-        "collisionRadius": 0.82, "tris": { "pc": 2480, "mobile": 790 } }
+        "collisionRadius": 0.734, "collisionSpheres": [[0.05, -0.02, 0.1, 0.71], "... up to 12"],
+        "tris": { "pc": 2500, "mobile": 800 }, "texture": { "pc": 1024, "mobile": 512 },
+        "bytes": { "pc": 412000, "mobile": 150000 } }
     ],
-    "big": [
-      { "id": "big_01", "pc": "meteors/pc/big_01.glb", "mobile": "meteors/mobile/big_01.glb",
-        "collisionRadius": 0.85, "tris": { "pc": 9900, "mobile": 2950 } }
-    ],
+    "big": [ "... same fields" ],
     "fragments": [
-      { "id": "frag_01", "pc": "meteors/pc/frag_01.glb", "mobile": "meteors/mobile/frag_01.glb",
-        "collisionRadius": 0.7 }
+      { "id": "frag_01", "...": "same fields", "sizeInRock": 0.849, "source": "rock_04" }
     ]
   },
   "textures": {
@@ -202,6 +207,12 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
   ]
 }
 ```
+
+- `collisionRadius`: one sphere at the origin with ≥ 92% of its volume inside the rock. `collisionSpheres`:
+  `[x, y, z, r]` (GLB units, glTF axes), greedy set of spheres 5% under the surface covering most of the
+  volume. Both scale with the instance. `sizeInRock`: a fragment's radius relative to its source rock.
+- `tools/write_manifest.py` rewrites the `meteors` section from the GLBs and `source/meteors/meteors.json`
+  and keeps `textures` and `music` as they are.
 
 ## Local checks
 

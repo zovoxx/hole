@@ -1,0 +1,1022 @@
+{
+ "rock_01": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 297812,
+   "radius": 1.0037,
+   "bboxCenter": [
+    -0.0001,
+    0.0009,
+    -0.0006
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 112204,
+   "radius": 1.0034,
+   "bboxCenter": [
+    -0.001,
+    -0.005,
+    0.0004
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_02": {
+  "pc": {
+   "tris": 2496,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 270840,
+   "radius": 1.0004,
+   "bboxCenter": [
+    -0.0004,
+    0.0,
+    -0.0001
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 796,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 102128,
+   "radius": 1.0068,
+   "bboxCenter": [
+    -0.0022,
+    0.0022,
+    -0.0001
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_03": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 266808,
+   "radius": 1.0009,
+   "bboxCenter": [
+    -0.0009,
+    -0.0008,
+    -0.0005
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 106680,
+   "radius": 1.0015,
+   "bboxCenter": [
+    0.0014,
+    0.0021,
+    -0.0097
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_04": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 263688,
+   "radius": 1.0022,
+   "bboxCenter": [
+    0.0003,
+    0.0006,
+    0.0002
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 91148,
+   "radius": 1.0029,
+   "bboxCenter": [
+    0.0019,
+    0.002,
+    -0.0031
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_05": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 410296,
+   "radius": 0.9994,
+   "bboxCenter": [
+    0.0013,
+    -0.0004,
+    -0.0012
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 150544,
+   "radius": 1.0006,
+   "bboxCenter": [
+    0.0024,
+    -0.0044,
+    0.0003
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_06": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 333196,
+   "radius": 1.0011,
+   "bboxCenter": [
+    -0.0029,
+    -0.001,
+    -0.0001
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 116388,
+   "radius": 1.0082,
+   "bboxCenter": [
+    -0.0003,
+    0.0007,
+    -0.0036
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_07": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 334712,
+   "radius": 1.0019,
+   "bboxCenter": [
+    -0.0002,
+    -0.0001,
+    -0.0002
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 122588,
+   "radius": 1.0053,
+   "bboxCenter": [
+    0.0007,
+    -0.0025,
+    0.0043
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "rock_08": {
+  "pc": {
+   "tris": 2500,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 455744,
+   "radius": 1.0047,
+   "bboxCenter": [
+    -0.0007,
+    0.0004,
+    0.0008
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 800,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 150320,
+   "radius": 1.0026,
+   "bboxCenter": [
+    -0.0012,
+    0.0031,
+    0.0041
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "big_01": {
+  "pc": {
+   "tris": 10000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 1046848,
+   "radius": 0.9988,
+   "bboxCenter": [
+    0.0003,
+    -0.0005,
+    -0.0001
+   ],
+   "textures": [
+    "2048"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 3000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 408988,
+   "radius": 1.0,
+   "bboxCenter": [
+    -0.0002,
+    0.0006,
+    0.0005
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "big_02": {
+  "pc": {
+   "tris": 10000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 852432,
+   "radius": 1.0004,
+   "bboxCenter": [
+    0.0007,
+    0.0003,
+    0.0002
+   ],
+   "textures": [
+    "2048"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 3000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 309696,
+   "radius": 1.0012,
+   "bboxCenter": [
+    0.0008,
+    -0.0014,
+    -0.0005
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "big_03": {
+  "pc": {
+   "tris": 10000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 1083964,
+   "radius": 1.0006,
+   "bboxCenter": [
+    0.0002,
+    0.0002,
+    0.0
+   ],
+   "textures": [
+    "2048"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 3000,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 459640,
+   "radius": 1.0005,
+   "bboxCenter": [
+    0.0007,
+    -0.0005,
+    -0.0007
+   ],
+   "textures": [
+    "1024"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "frag_01": {
+  "pc": {
+   "tris": 400,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 75884,
+   "radius": 1.0075,
+   "bboxCenter": [
+    0.001,
+    -0.0037,
+    -0.0055
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 150,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 30856,
+   "radius": 1.0055,
+   "bboxCenter": [
+    -0.0001,
+    -0.0064,
+    0.0033
+   ],
+   "textures": [
+    "256"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "frag_02": {
+  "pc": {
+   "tris": 400,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 80460,
+   "radius": 1.0035,
+   "bboxCenter": [
+    -0.0005,
+    0.0003,
+    -0.0008
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 150,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 28048,
+   "radius": 1.0228,
+   "bboxCenter": [
+    -0.0012,
+    0.0063,
+    0.0002
+   ],
+   "textures": [
+    "256"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "frag_03": {
+  "pc": {
+   "tris": 400,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 85860,
+   "radius": 1.0003,
+   "bboxCenter": [
+    -0.001,
+    0.0018,
+    -0.001
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 150,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 28068,
+   "radius": 1.0028,
+   "bboxCenter": [
+    -0.0012,
+    0.0076,
+    0.0012
+   ],
+   "textures": [
+    "256"
+   ],
+   "baseMedian": 0.58
+  }
+ },
+ "frag_04": {
+  "pc": {
+   "tris": 400,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 103712,
+   "radius": 1.0028,
+   "bboxCenter": [
+    -0.0031,
+    0.0003,
+    0.0039
+   ],
+   "textures": [
+    "512"
+   ],
+   "baseMedian": 0.58
+  },
+  "mobile": {
+   "tris": 150,
+   "attributes": [
+    "NORMAL",
+    "POSITION",
+    "TANGENT",
+    "TEXCOORD_0"
+   ],
+   "images": 3,
+   "mime": [
+    "image/webp"
+   ],
+   "extensionsRequired": [
+    "EXT_texture_webp"
+   ],
+   "maps": [
+    "base",
+    "mr",
+    "normal",
+    "ao"
+   ],
+   "bytes": 35468,
+   "radius": 1.0026,
+   "bboxCenter": [
+    -0.0031,
+    -0.0082,
+    0.0045
+   ],
+   "textures": [
+    "256"
+   ],
+   "baseMedian": 0.58
+  }
+ }
+}

@@ -1,0 +1,2352 @@
+{
+ "big_01": {
+  "raw": "source/meteors/raw/big_01.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    0.00191,
+    -0.0012,
+    0.00207
+   ],
+   "scale": 2.23935
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 583688,
+   "parts": 1,
+   "grid": [
+    284,
+    283,
+    281
+   ],
+   "solidShare": 0.3154,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.3154
+   },
+   "rawArea": 25.504,
+   "level": -2.0,
+   "distToRawMean": 0.00184,
+   "distToRawP99": 0.00384,
+   "seconds": 21.3
+  },
+  "lumP5P95": [
+   0.547,
+   1.448
+  ],
+  "lightingMinMax": [
+   0.589,
+   1.309
+  ],
+  "gainMinMax": [
+   0.764,
+   1.698
+  ],
+  "lod": {
+   "pc": {
+    "tris": 10000,
+    "texture": 2048,
+    "uvFill": 0.513,
+    "cageExtrusion": 0.02,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0041,
+    "hiToLodMax": 0.0076,
+    "hiToLodP99": 0.0034,
+    "hiToLodMean": 0.0009,
+    "rawMedianLin": 0.2521,
+    "rawP5P95Ratio": 2.2,
+    "contrastGamma": 1.0,
+    "aoMean": 0.944,
+    "coverage": 0.753,
+    "normalFlipped": 0.0,
+    "bytes": 1046848,
+    "seconds": 29.2
+   },
+   "mobile": {
+    "tris": 3000,
+    "texture": 1024,
+    "uvFill": 0.512,
+    "cageExtrusion": 0.028,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0094,
+    "hiToLodMax": 0.0142,
+    "hiToLodP99": 0.0082,
+    "hiToLodMean": 0.0021,
+    "rawMedianLin": 0.2546,
+    "rawP5P95Ratio": 2.16,
+    "contrastGamma": 1.0,
+    "aoMean": 0.944,
+    "coverage": 0.736,
+    "normalFlipped": 0.0,
+    "bytes": 408988,
+    "seconds": 18.3
+   }
+  },
+  "collisionRadius": 0.967,
+  "collisionSpheres": [
+   [
+    0.0278,
+    -0.1389,
+    -0.0278,
+    0.6852
+   ],
+   [
+    -0.0833,
+    0.0833,
+    -0.0278,
+    0.676
+   ],
+   [
+    0.1389,
+    0.0278,
+    -0.0278,
+    0.6739
+   ],
+   [
+    -0.1944,
+    -0.0278,
+    0.1944,
+    0.5584
+   ],
+   [
+    -0.4167,
+    -0.0833,
+    -0.1389,
+    0.4731
+   ],
+   [
+    0.0278,
+    -0.0278,
+    0.5278,
+    0.3637
+   ],
+   [
+    0.0278,
+    -0.0278,
+    -0.1944,
+    0.628
+   ],
+   [
+    -0.0833,
+    0.3056,
+    0.3056,
+    0.4327
+   ],
+   [
+    0.25,
+    -0.4167,
+    0.25,
+    0.3669
+   ],
+   [
+    -0.1389,
+    -0.3611,
+    -0.4167,
+    0.3577
+   ],
+   [
+    0.0278,
+    0.3056,
+    -0.3611,
+    0.4082
+   ],
+   [
+    0.0833,
+    0.4167,
+    0.1389,
+    0.4147
+   ]
+  ],
+  "sphereCoverage": 0.629,
+  "unitSphereFill": 0.836,
+  "kind": "big",
+  "seconds": 78.8
+ },
+ "big_02": {
+  "raw": "source/meteors/raw/big_02.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    -0.04516,
+    -0.02598,
+    0.01588
+   ],
+   "scale": 1.80733
+  },
+  "solid": {
+   "tris": 201508,
+   "trisMC": 201508,
+   "parts": 1,
+   "grid": [
+    245,
+    165,
+    212
+   ],
+   "solidShare": 0.1592,
+   "closeVoxels": 5,
+   "sharesByClose": {
+    "1": 0.0287,
+    "2": 0.029,
+    "3": 0.0293,
+    "5": 0.1592
+   },
+   "rawArea": 8.925,
+   "level": -2.0,
+   "distToRawMean": 0.00223,
+   "distToRawP99": 0.00571,
+   "seconds": 9.1
+  },
+  "lumP5P95": [
+   0.469,
+   1.784
+  ],
+  "lightingMinMax": [
+   0.476,
+   1.684
+  ],
+  "gainMinMax": [
+   0.6,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 10000,
+    "texture": 2048,
+    "uvFill": 0.536,
+    "cageExtrusion": 0.02,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0024,
+    "hiToLodMax": 0.0041,
+    "hiToLodP99": 0.0019,
+    "hiToLodMean": 0.0005,
+    "rawMedianLin": 0.1451,
+    "rawP5P95Ratio": 2.38,
+    "contrastGamma": 1.0,
+    "aoMean": 0.975,
+    "coverage": 0.709,
+    "normalFlipped": 0.0,
+    "bytes": 852432,
+    "seconds": 36.9
+   },
+   "mobile": {
+    "tris": 3000,
+    "texture": 1024,
+    "uvFill": 0.582,
+    "cageExtrusion": 0.021,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0042,
+    "hiToLodMax": 0.0089,
+    "hiToLodP99": 0.0044,
+    "hiToLodMean": 0.0011,
+    "rawMedianLin": 0.1445,
+    "rawP5P95Ratio": 2.37,
+    "contrastGamma": 1.0,
+    "aoMean": 0.977,
+    "coverage": 0.713,
+    "normalFlipped": 0.0,
+    "bytes": 309696,
+    "seconds": 15.2
+   }
+  },
+  "collisionRadius": 0.276,
+  "collisionSpheres": [
+   [
+    0.3056,
+    -0.1944,
+    -0.0278,
+    0.3583
+   ],
+   [
+    -0.3611,
+    0.3056,
+    -0.1389,
+    0.2875
+   ],
+   [
+    0.0278,
+    0.0278,
+    -0.0833,
+    0.2638
+   ],
+   [
+    0.4722,
+    -0.3056,
+    0.0833,
+    0.2865
+   ],
+   [
+    -0.1389,
+    0.1389,
+    -0.1389,
+    0.2572
+   ],
+   [
+    0.4722,
+    -0.3611,
+    -0.0833,
+    0.2583
+   ],
+   [
+    -0.5278,
+    0.4167,
+    -0.1944,
+    0.1862
+   ],
+   [
+    0.3611,
+    -0.1944,
+    0.0833,
+    0.3088
+   ],
+   [
+    0.0833,
+    -0.0278,
+    -0.1389,
+    0.2621
+   ],
+   [
+    -0.3056,
+    0.25,
+    -0.1944,
+    0.2726
+   ],
+   [
+    0.5833,
+    -0.4167,
+    0.0278,
+    0.2079
+   ],
+   [
+    0.3056,
+    -0.3056,
+    0.1944,
+    0.2115
+   ]
+  ],
+  "sphereCoverage": 0.71,
+  "unitSphereFill": 0.152,
+  "kind": "big",
+  "seconds": 68.1
+ },
+ "big_03": {
+  "raw": "source/meteors/raw/big_03.glb",
+  "rawParts": 4,
+  "droppedFaces": 478,
+  "normalize": {
+   "center": [
+    0.01014,
+    -0.03378,
+    0.01034
+   ],
+   "scale": 2.05685
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 468396,
+   "parts": 1,
+   "grid": [
+    258,
+    279,
+    260
+   ],
+   "solidShare": 0.2967,
+   "closeVoxels": 8,
+   "sharesByClose": {
+    "1": 0.0322,
+    "2": 0.0324,
+    "3": 0.0328,
+    "5": 0.0335,
+    "8": 0.2967
+   },
+   "rawArea": 21.093,
+   "level": -2.0,
+   "distToRawMean": 0.0024,
+   "distToRawP99": 0.01333,
+   "seconds": 25.8
+  },
+  "lumP5P95": [
+   0.447,
+   2.697
+  ],
+  "lightingMinMax": [
+   0.509,
+   2.647
+  ],
+  "gainMinMax": [
+   0.6,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 10000,
+    "texture": 2048,
+    "uvFill": 0.48,
+    "cageExtrusion": 0.02,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.004,
+    "hiToLodMax": 0.0084,
+    "hiToLodP99": 0.0031,
+    "hiToLodMean": 0.0008,
+    "rawMedianLin": 0.1286,
+    "rawP5P95Ratio": 3.48,
+    "contrastGamma": 1.0,
+    "aoMean": 0.959,
+    "coverage": 0.677,
+    "normalFlipped": 0.0021,
+    "bytes": 1083964,
+    "seconds": 32.9
+   },
+   "mobile": {
+    "tris": 3000,
+    "texture": 1024,
+    "uvFill": 0.561,
+    "cageExtrusion": 0.032,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0105,
+    "hiToLodMax": 0.0173,
+    "hiToLodP99": 0.0073,
+    "hiToLodMean": 0.0018,
+    "rawMedianLin": 0.1299,
+    "rawP5P95Ratio": 3.56,
+    "contrastGamma": 1.0,
+    "aoMean": 0.961,
+    "coverage": 0.777,
+    "normalFlipped": 0.0001,
+    "bytes": 459640,
+    "seconds": 26.3
+   }
+  },
+  "collisionRadius": 0.869,
+  "collisionSpheres": [
+   [
+    -0.0833,
+    0.0278,
+    -0.0278,
+    0.661
+   ],
+   [
+    0.0278,
+    -0.0833,
+    -0.0278,
+    0.654
+   ],
+   [
+    0.0278,
+    -0.0278,
+    -0.25,
+    0.5951
+   ],
+   [
+    -0.1389,
+    -0.0833,
+    0.25,
+    0.5165
+   ],
+   [
+    0.1389,
+    -0.0278,
+    -0.0278,
+    0.6151
+   ],
+   [
+    0.0833,
+    0.3611,
+    -0.0278,
+    0.4277
+   ],
+   [
+    -0.1389,
+    -0.0833,
+    -0.0278,
+    0.6291
+   ],
+   [
+    0.0278,
+    -0.1389,
+    0.4722,
+    0.3799
+   ],
+   [
+    -0.0833,
+    0.1389,
+    -0.25,
+    0.5273
+   ],
+   [
+    -0.1944,
+    0.1944,
+    0.4722,
+    0.3063
+   ],
+   [
+    0.1944,
+    -0.5833,
+    -0.3056,
+    0.2433
+   ],
+   [
+    0.1944,
+    -0.1389,
+    0.1389,
+    0.5141
+   ]
+  ],
+  "sphereCoverage": 0.69,
+  "unitSphereFill": 0.641,
+  "kind": "big",
+  "seconds": 94.3
+ },
+ "frag_01": {
+  "kind": "frag",
+  "source": "rock_04",
+  "seed": 1,
+  "lod": {
+   "pc": {
+    "tris": 400,
+    "texture": 512,
+    "uvFill": 0.539,
+    "cageExtrusion": 0.034,
+    "sharpEdges": 61,
+    "lodToHiMax": 0.01,
+    "hiToLodMax": 0.0192,
+    "hiToLodP99": 0.0095,
+    "hiToLodMean": 0.002,
+    "rawMedianLin": 0.1519,
+    "rawP5P95Ratio": 1.81,
+    "contrastGamma": 1.0,
+    "aoMean": 0.996,
+    "coverage": 0.599,
+    "normalFlipped": 0.0085,
+    "bytes": 75884,
+    "seconds": 6.4
+   },
+   "mobile": {
+    "tris": 150,
+    "texture": 256,
+    "uvFill": 0.497,
+    "cageExtrusion": 0.069,
+    "sharpEdges": 40,
+    "lodToHiMax": 0.0192,
+    "hiToLodMax": 0.047,
+    "hiToLodP99": 0.0216,
+    "hiToLodMean": 0.0041,
+    "rawMedianLin": 0.1528,
+    "rawP5P95Ratio": 1.74,
+    "contrastGamma": 1.0,
+    "aoMean": 0.996,
+    "coverage": 0.643,
+    "normalFlipped": 0.0116,
+    "bytes": 30856,
+    "seconds": 5.6
+   }
+  },
+  "hiTris": 62706,
+  "normalize": {
+   "center": [
+    -0.29472,
+    0.05494,
+    0.27162
+   ],
+   "scale": 1.17718,
+   "sizeInRock": 0.8495
+  },
+  "collisionRadius": 0.467,
+  "collisionSpheres": [
+   [
+    -0.0833,
+    -0.0278,
+    -0.0278,
+    0.3977
+   ],
+   [
+    0.1944,
+    0.3056,
+    -0.25,
+    0.2984
+   ],
+   [
+    -0.25,
+    -0.25,
+    -0.25,
+    0.2998
+   ],
+   [
+    -0.0278,
+    0.1944,
+    -0.0278,
+    0.3633
+   ],
+   [
+    -0.4167,
+    -0.25,
+    0.1389,
+    0.2492
+   ],
+   [
+    0.0278,
+    0.1944,
+    -0.3611,
+    0.3011
+   ],
+   [
+    -0.1944,
+    -0.0278,
+    0.3611,
+    0.236
+   ],
+   [
+    -0.1944,
+    -0.1389,
+    -0.5278,
+    0.213
+   ],
+   [
+    -0.4722,
+    -0.3611,
+    -0.0833,
+    0.2082
+   ],
+   [
+    0.1944,
+    0.4167,
+    0.0278,
+    0.2155
+   ],
+   [
+    -0.0833,
+    0.1389,
+    0.25,
+    0.2653
+   ],
+   [
+    -0.25,
+    -0.1389,
+    0.4167,
+    0.2157
+   ]
+  ],
+  "sphereCoverage": 0.628,
+  "unitSphereFill": 0.255,
+  "seconds": 40.0
+ },
+ "frag_02": {
+  "kind": "frag",
+  "source": "rock_04",
+  "seed": 1,
+  "lod": {
+   "pc": {
+    "tris": 400,
+    "texture": 512,
+    "uvFill": 0.549,
+    "cageExtrusion": 0.041,
+    "sharpEdges": 56,
+    "lodToHiMax": 0.0069,
+    "hiToLodMax": 0.0251,
+    "hiToLodP99": 0.0114,
+    "hiToLodMean": 0.0023,
+    "rawMedianLin": 0.1558,
+    "rawP5P95Ratio": 1.67,
+    "contrastGamma": 1.0,
+    "aoMean": 0.996,
+    "coverage": 0.619,
+    "normalFlipped": 0.0036,
+    "bytes": 80460,
+    "seconds": 15.0
+   },
+   "mobile": {
+    "tris": 150,
+    "texture": 256,
+    "uvFill": 0.465,
+    "cageExtrusion": 0.048,
+    "sharpEdges": 40,
+    "lodToHiMax": 0.0252,
+    "hiToLodMax": 0.0307,
+    "hiToLodP99": 0.021,
+    "hiToLodMean": 0.0041,
+    "rawMedianLin": 0.1558,
+    "rawP5P95Ratio": 1.63,
+    "contrastGamma": 1.0,
+    "aoMean": 0.996,
+    "coverage": 0.58,
+    "normalFlipped": 0.0098,
+    "bytes": 28048,
+    "seconds": 7.8
+   }
+  },
+  "hiTris": 68068,
+  "normalize": {
+   "center": [
+    0.19937,
+    0.37899,
+    -0.03247
+   ],
+   "scale": 1.12822,
+   "sizeInRock": 0.8864
+  },
+  "collisionRadius": 0.499,
+  "collisionSpheres": [
+   [
+    0.0833,
+    -0.0278,
+    -0.0278,
+    0.4143
+   ],
+   [
+    -0.25,
+    -0.1944,
+    -0.1389,
+    0.329
+   ],
+   [
+    0.25,
+    -0.1944,
+    0.0833,
+    0.3647
+   ],
+   [
+    0.1389,
+    0.3056,
+    -0.0278,
+    0.2846
+   ],
+   [
+    0.1944,
+    -0.3611,
+    -0.0278,
+    0.3262
+   ],
+   [
+    -0.4722,
+    -0.25,
+    -0.25,
+    0.2533
+   ],
+   [
+    -0.0833,
+    0.25,
+    -0.25,
+    0.2359
+   ],
+   [
+    0.5278,
+    -0.1389,
+    0.1944,
+    0.2471
+   ],
+   [
+    -0.3056,
+    -0.4167,
+    -0.1944,
+    0.2507
+   ],
+   [
+    0.4722,
+    -0.3611,
+    0.3056,
+    0.2161
+   ],
+   [
+    -0.3056,
+    0.0278,
+    -0.3056,
+    0.2109
+   ],
+   [
+    0.0278,
+    -0.3611,
+    -0.0833,
+    0.3047
+   ]
+  ],
+  "sphereCoverage": 0.633,
+  "unitSphereFill": 0.267,
+  "seconds": 65.7
+ },
+ "frag_03": {
+  "kind": "frag",
+  "source": "rock_04",
+  "seed": 1,
+  "lod": {
+   "pc": {
+    "tris": 400,
+    "texture": 512,
+    "uvFill": 0.559,
+    "cageExtrusion": 0.029,
+    "sharpEdges": 65,
+    "lodToHiMax": 0.0082,
+    "hiToLodMax": 0.0156,
+    "hiToLodP99": 0.0092,
+    "hiToLodMean": 0.0024,
+    "rawMedianLin": 0.1519,
+    "rawP5P95Ratio": 2.59,
+    "contrastGamma": 1.0,
+    "aoMean": 0.993,
+    "coverage": 0.628,
+    "normalFlipped": 0.0104,
+    "bytes": 85860,
+    "seconds": 25.3
+   },
+   "mobile": {
+    "tris": 150,
+    "texture": 256,
+    "uvFill": 0.403,
+    "cageExtrusion": 0.041,
+    "sharpEdges": 41,
+    "lodToHiMax": 0.0117,
+    "hiToLodMax": 0.0249,
+    "hiToLodP99": 0.0181,
+    "hiToLodMean": 0.0043,
+    "rawMedianLin": 0.152,
+    "rawP5P95Ratio": 2.64,
+    "contrastGamma": 1.0,
+    "aoMean": 0.994,
+    "coverage": 0.51,
+    "normalFlipped": 0.0141,
+    "bytes": 28068,
+    "seconds": 8.6
+   }
+  },
+  "hiTris": 64818,
+  "normalize": {
+   "center": [
+    -0.0848,
+    -0.16034,
+    -0.40603
+   ],
+   "scale": 1.15543,
+   "sizeInRock": 0.8655
+  },
+  "collisionRadius": 0.499,
+  "collisionSpheres": [
+   [
+    -0.0833,
+    -0.0278,
+    -0.0278,
+    0.3864
+   ],
+   [
+    -0.3056,
+    -0.0833,
+    -0.1944,
+    0.3572
+   ],
+   [
+    0.3056,
+    -0.0833,
+    0.0833,
+    0.2974
+   ],
+   [
+    -0.1944,
+    0.0833,
+    0.25,
+    0.315
+   ],
+   [
+    -0.1389,
+    -0.25,
+    -0.3056,
+    0.2863
+   ],
+   [
+    0.1944,
+    -0.25,
+    -0.1389,
+    0.2589
+   ],
+   [
+    -0.1944,
+    0.0278,
+    0.0833,
+    0.3773
+   ],
+   [
+    0.5833,
+    -0.1944,
+    0.0278,
+    0.1851
+   ],
+   [
+    0.3611,
+    -0.0833,
+    0.25,
+    0.2365
+   ],
+   [
+    0.0833,
+    0.0833,
+    0.4722,
+    0.1722
+   ],
+   [
+    -0.3056,
+    0.25,
+    0.3611,
+    0.2229
+   ],
+   [
+    -0.3056,
+    -0.25,
+    -0.5278,
+    0.1895
+   ]
+  ],
+  "sphereCoverage": 0.602,
+  "unitSphereFill": 0.255,
+  "seconds": 102.5
+ },
+ "frag_04": {
+  "kind": "frag",
+  "source": "rock_04",
+  "seed": 1,
+  "lod": {
+   "pc": {
+    "tris": 400,
+    "texture": 512,
+    "uvFill": 0.583,
+    "cageExtrusion": 0.04,
+    "sharpEdges": 83,
+    "lodToHiMax": 0.0098,
+    "hiToLodMax": 0.0243,
+    "hiToLodP99": 0.0102,
+    "hiToLodMean": 0.0025,
+    "rawMedianLin": 0.1541,
+    "rawP5P95Ratio": 2.72,
+    "contrastGamma": 1.0,
+    "aoMean": 0.992,
+    "coverage": 0.705,
+    "normalFlipped": 0.0073,
+    "bytes": 103712,
+    "seconds": 17.0
+   },
+   "mobile": {
+    "tris": 150,
+    "texture": 256,
+    "uvFill": 0.551,
+    "cageExtrusion": 0.06,
+    "sharpEdges": 43,
+    "lodToHiMax": 0.0189,
+    "hiToLodMax": 0.0396,
+    "hiToLodP99": 0.0201,
+    "hiToLodMean": 0.0045,
+    "rawMedianLin": 0.1546,
+    "rawP5P95Ratio": 2.73,
+    "contrastGamma": 1.0,
+    "aoMean": 0.992,
+    "coverage": 0.695,
+    "normalFlipped": 0.0168,
+    "bytes": 35468,
+    "seconds": 8.4
+   }
+  },
+  "hiTris": 64270,
+  "normalize": {
+   "center": [
+    0.20526,
+    -0.29138,
+    0.22392
+   ],
+   "scale": 1.15164,
+   "sizeInRock": 0.8683
+  },
+  "collisionRadius": 0.48,
+  "collisionSpheres": [
+   [
+    -0.0833,
+    -0.0278,
+    0.1389,
+    0.367
+   ],
+   [
+    0.1389,
+    0.1944,
+    -0.1944,
+    0.304
+   ],
+   [
+    0.1944,
+    -0.1944,
+    0.0278,
+    0.3245
+   ],
+   [
+    -0.0278,
+    0.3056,
+    0.0278,
+    0.2892
+   ],
+   [
+    0.3611,
+    -0.3611,
+    0.0278,
+    0.2578
+   ],
+   [
+    0.1944,
+    0.3611,
+    -0.25,
+    0.2616
+   ],
+   [
+    -0.3056,
+    -0.0833,
+    0.3056,
+    0.2485
+   ],
+   [
+    -0.1389,
+    -0.25,
+    0.4167,
+    0.2154
+   ],
+   [
+    0.4722,
+    -0.0278,
+    -0.25,
+    0.1798
+   ],
+   [
+    -0.25,
+    0.1944,
+    0.1944,
+    0.2434
+   ],
+   [
+    0.4167,
+    0.25,
+    -0.3611,
+    0.191
+   ],
+   [
+    0.0278,
+    -0.0278,
+    -0.0278,
+    0.3576
+   ]
+  ],
+  "sphereCoverage": 0.598,
+  "unitSphereFill": 0.242,
+  "seconds": 131.2
+ },
+ "rock_01": {
+  "raw": "source/meteors/raw/rock_01.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    -0.00231,
+    0.06492,
+    0.00822
+   ],
+   "scale": 2.0249
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 405604,
+   "parts": 1,
+   "grid": [
+    247,
+    262,
+    260
+   ],
+   "solidShare": 0.2579,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.2579
+   },
+   "rawArea": 17.425,
+   "level": -2.0,
+   "distToRawMean": 0.00189,
+   "distToRawP99": 0.00376,
+   "seconds": 15.6
+  },
+  "lumP5P95": [
+   0.423,
+   1.556
+  ],
+  "lightingMinMax": [
+   0.524,
+   1.276
+  ],
+  "gainMinMax": [
+   0.784,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.569,
+    "cageExtrusion": 0.025,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.008,
+    "hiToLodMax": 0.0118,
+    "hiToLodP99": 0.0064,
+    "hiToLodMean": 0.0015,
+    "rawMedianLin": 0.2078,
+    "rawP5P95Ratio": 2.89,
+    "contrastGamma": 1.0,
+    "aoMean": 0.975,
+    "coverage": 0.733,
+    "normalFlipped": 0.0,
+    "bytes": 297812,
+    "seconds": 17.3
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.489,
+    "cageExtrusion": 0.044,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0208,
+    "hiToLodMax": 0.0268,
+    "hiToLodP99": 0.0138,
+    "hiToLodMean": 0.0036,
+    "rawMedianLin": 0.2073,
+    "rawP5P95Ratio": 2.82,
+    "contrastGamma": 1.0,
+    "aoMean": 0.975,
+    "coverage": 0.623,
+    "normalFlipped": 0.0,
+    "bytes": 112204,
+    "seconds": 14.0
+   }
+  },
+  "collisionRadius": 0.734,
+  "collisionSpheres": [
+   [
+    0.0833,
+    -0.1389,
+    0.1389,
+    0.5912
+   ],
+   [
+    -0.1944,
+    0.1389,
+    0.0278,
+    0.5238
+   ],
+   [
+    -0.0833,
+    0.3056,
+    0.0833,
+    0.4565
+   ],
+   [
+    -0.3056,
+    0.1944,
+    0.25,
+    0.4109
+   ],
+   [
+    -0.1389,
+    0.0278,
+    -0.1944,
+    0.4175
+   ],
+   [
+    0.25,
+    -0.25,
+    0.25,
+    0.4523
+   ],
+   [
+    0.1389,
+    -0.3056,
+    0.0278,
+    0.4709
+   ],
+   [
+    0.1389,
+    -0.25,
+    0.4167,
+    0.3982
+   ],
+   [
+    -0.1389,
+    0.5278,
+    0.1944,
+    0.3054
+   ],
+   [
+    0.1389,
+    -0.0278,
+    -0.1944,
+    0.3613
+   ],
+   [
+    -0.4167,
+    0.3056,
+    -0.1389,
+    0.2891
+   ],
+   [
+    -0.1944,
+    -0.1389,
+    -0.6944,
+    0.1401
+   ]
+  ],
+  "sphereCoverage": 0.678,
+  "unitSphereFill": 0.496,
+  "kind": "small",
+  "seconds": 56.5
+ },
+ "rock_02": {
+  "raw": "source/meteors/raw/rock_02.glb",
+  "rawParts": 2,
+  "droppedFaces": 10,
+  "normalize": {
+   "center": [
+    0.03424,
+    0.02124,
+    -0.00199
+   ],
+   "scale": 2.10613
+  },
+  "solid": {
+   "tris": 207300,
+   "trisMC": 207300,
+   "parts": 1,
+   "grid": [
+    285,
+    158,
+    151
+   ],
+   "solidShare": 0.2271,
+   "closeVoxels": 5,
+   "sharesByClose": {
+    "1": 0.0401,
+    "2": 0.0404,
+    "3": 0.0406,
+    "5": 0.2271
+   },
+   "rawArea": 9.529,
+   "level": -2.0,
+   "distToRawMean": 0.00187,
+   "distToRawP99": 0.00446,
+   "seconds": 7.2
+  },
+  "lumP5P95": [
+   0.586,
+   1.322
+  ],
+  "lightingMinMax": [
+   0.721,
+   1.188
+  ],
+  "gainMinMax": [
+   0.842,
+   1.386
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2496,
+    "texture": 1024,
+    "uvFill": 0.554,
+    "cageExtrusion": 0.023,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0046,
+    "hiToLodMax": 0.0105,
+    "hiToLodP99": 0.0051,
+    "hiToLodMean": 0.0012,
+    "rawMedianLin": 0.2957,
+    "rawP5P95Ratio": 2.23,
+    "contrastGamma": 1.0,
+    "aoMean": 0.982,
+    "coverage": 0.674,
+    "normalFlipped": 0.0,
+    "bytes": 270840,
+    "seconds": 14.8
+   },
+   "mobile": {
+    "tris": 796,
+    "texture": 512,
+    "uvFill": 0.449,
+    "cageExtrusion": 0.033,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0109,
+    "hiToLodMax": 0.0182,
+    "hiToLodP99": 0.0104,
+    "hiToLodMean": 0.0026,
+    "rawMedianLin": 0.2965,
+    "rawP5P95Ratio": 2.17,
+    "contrastGamma": 1.0,
+    "aoMean": 0.983,
+    "coverage": 0.552,
+    "normalFlipped": 0.0,
+    "bytes": 102128,
+    "seconds": 10.5
+   }
+  },
+  "collisionRadius": 0.426,
+  "collisionSpheres": [
+   [
+    0.1389,
+    0.0278,
+    0.0278,
+    0.3436
+   ],
+   [
+    -0.4167,
+    0.0833,
+    0.0278,
+    0.2808
+   ],
+   [
+    0.4167,
+    -0.0833,
+    -0.0278,
+    0.3225
+   ],
+   [
+    -0.1389,
+    0.0278,
+    -0.0278,
+    0.2923
+   ],
+   [
+    -0.5833,
+    0.0833,
+    0.0833,
+    0.2452
+   ],
+   [
+    0.4167,
+    0.1389,
+    -0.0278,
+    0.2775
+   ],
+   [
+    0.1944,
+    -0.1389,
+    -0.1389,
+    0.2362
+   ],
+   [
+    0.6389,
+    0.0833,
+    -0.0833,
+    0.192
+   ],
+   [
+    -0.1944,
+    0.0833,
+    0.1389,
+    0.2298
+   ],
+   [
+    0.6389,
+    -0.1389,
+    -0.0833,
+    0.2008
+   ],
+   [
+    -0.6389,
+    0.1944,
+    0.1389,
+    0.203
+   ],
+   [
+    0.1944,
+    -0.0278,
+    0.0278,
+    0.3476
+   ]
+  ],
+  "sphereCoverage": 0.657,
+  "unitSphereFill": 0.173,
+  "kind": "small",
+  "seconds": 39.9
+ },
+ "rock_03": {
+  "raw": "source/meteors/raw/rock_03.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    0.00085,
+    -0.04389,
+    0.03671
+   ],
+   "scale": 2.05065
+  },
+  "solid": {
+   "tris": 249996,
+   "trisMC": 318816,
+   "parts": 1,
+   "grid": [
+    265,
+    273,
+    188
+   ],
+   "solidShare": 0.1526,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.1526
+   },
+   "rawArea": 13.814,
+   "level": -2.0,
+   "distToRawMean": 0.0018,
+   "distToRawP99": 0.00368,
+   "seconds": 10.9
+  },
+  "lumP5P95": [
+   0.505,
+   2.047
+  ],
+  "lightingMinMax": [
+   0.691,
+   1.668
+  ],
+  "gainMinMax": [
+   0.6,
+   1.445
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.689,
+    "cageExtrusion": 0.026,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0061,
+    "hiToLodMax": 0.0127,
+    "hiToLodP99": 0.0056,
+    "hiToLodMean": 0.0013,
+    "rawMedianLin": 0.1351,
+    "rawP5P95Ratio": 3.1,
+    "contrastGamma": 1.0,
+    "aoMean": 0.986,
+    "coverage": 0.801,
+    "normalFlipped": 0.0,
+    "bytes": 266808,
+    "seconds": 20.2
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.647,
+    "cageExtrusion": 0.042,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0131,
+    "hiToLodMax": 0.0253,
+    "hiToLodP99": 0.012,
+    "hiToLodMean": 0.0028,
+    "rawMedianLin": 0.1357,
+    "rawP5P95Ratio": 3.1,
+    "contrastGamma": 1.0,
+    "aoMean": 0.986,
+    "coverage": 0.742,
+    "normalFlipped": 0.0,
+    "bytes": 106680,
+    "seconds": 10.5
+   }
+  },
+  "collisionRadius": 0.213,
+  "collisionSpheres": [
+   [
+    -0.4722,
+    -0.0833,
+    0.25,
+    0.2043
+   ],
+   [
+    -0.3611,
+    0.1944,
+    -0.3611,
+    0.2047
+   ],
+   [
+    0.6389,
+    -0.1389,
+    -0.1389,
+    0.2003
+   ],
+   [
+    -0.5278,
+    0.0833,
+    -0.0278,
+    0.1927
+   ],
+   [
+    -0.0833,
+    -0.1944,
+    0.3611,
+    0.1883
+   ],
+   [
+    0.0278,
+    0.0833,
+    -0.3056,
+    0.1871
+   ],
+   [
+    0.0833,
+    0.25,
+    -0.6944,
+    0.1877
+   ],
+   [
+    0.3056,
+    -0.25,
+    0.25,
+    0.1885
+   ],
+   [
+    -0.1944,
+    0.25,
+    -0.5278,
+    0.2023
+   ],
+   [
+    0.3056,
+    0.1389,
+    -0.5833,
+    0.1844
+   ],
+   [
+    0.0833,
+    -0.3056,
+    0.5278,
+    0.1915
+   ],
+   [
+    -0.6389,
+    0.1944,
+    -0.25,
+    0.186
+   ]
+  ],
+  "sphereCoverage": 0.365,
+  "unitSphereFill": 0.23,
+  "kind": "small",
+  "seconds": 49.8
+ },
+ "rock_04": {
+  "raw": "source/meteors/raw/rock_04.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    0.00138,
+    -0.02014,
+    0.00581
+   ],
+   "scale": 2.16887
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 480008,
+   "parts": 1,
+   "grid": [
+    277,
+    270,
+    263
+   ],
+   "solidShare": 0.2868,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.2868
+   },
+   "rawArea": 21.158,
+   "level": -2.0,
+   "distToRawMean": 0.00187,
+   "distToRawP99": 0.00416,
+   "seconds": 18.7
+  },
+  "lumP5P95": [
+   0.388,
+   1.426
+  ],
+  "lightingMinMax": [
+   0.448,
+   1.181
+  ],
+  "gainMinMax": [
+   0.847,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.584,
+    "cageExtrusion": 0.034,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0067,
+    "hiToLodMax": 0.0193,
+    "hiToLodP99": 0.0069,
+    "hiToLodMean": 0.0016,
+    "rawMedianLin": 0.1489,
+    "rawP5P95Ratio": 2.56,
+    "contrastGamma": 1.0,
+    "aoMean": 0.987,
+    "coverage": 0.758,
+    "normalFlipped": 0.0001,
+    "bytes": 263688,
+    "seconds": 23.3
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.514,
+    "cageExtrusion": 0.037,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0118,
+    "hiToLodMax": 0.0219,
+    "hiToLodP99": 0.0127,
+    "hiToLodMean": 0.0032,
+    "rawMedianLin": 0.1494,
+    "rawP5P95Ratio": 2.58,
+    "contrastGamma": 1.0,
+    "aoMean": 0.988,
+    "coverage": 0.601,
+    "normalFlipped": 0.0001,
+    "bytes": 91148,
+    "seconds": 11.7
+   }
+  },
+  "collisionRadius": 0.883,
+  "collisionSpheres": [
+   [
+    0.0278,
+    -0.0278,
+    -0.0278,
+    0.7126
+   ],
+   [
+    -0.0278,
+    0.0278,
+    0.0833,
+    0.6578
+   ],
+   [
+    -0.1389,
+    -0.3611,
+    -0.0278,
+    0.4947
+   ],
+   [
+    0.0833,
+    0.1389,
+    -0.0278,
+    0.627
+   ],
+   [
+    0.25,
+    -0.25,
+    -0.25,
+    0.4623
+   ],
+   [
+    -0.1389,
+    0.0278,
+    -0.1944,
+    0.5673
+   ],
+   [
+    -0.1389,
+    -0.3056,
+    -0.5278,
+    0.3003
+   ],
+   [
+    -0.0833,
+    0.3056,
+    -0.1389,
+    0.4801
+   ],
+   [
+    0.5833,
+    -0.1389,
+    -0.1389,
+    0.3063
+   ],
+   [
+    -0.5278,
+    0.0278,
+    0.0833,
+    0.3073
+   ],
+   [
+    0.25,
+    -0.4167,
+    0.0833,
+    0.3711
+   ],
+   [
+    0.1389,
+    0.0833,
+    -0.3611,
+    0.4375
+   ]
+  ],
+  "sphereCoverage": 0.702,
+  "unitSphereFill": 0.668,
+  "kind": "small",
+  "seconds": 63.2
+ },
+ "rock_05": {
+  "raw": "source/meteors/raw/rock_05.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    0.0386,
+    0.07005,
+    0.02158
+   ],
+   "scale": 2.00202
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 274220,
+   "parts": 1,
+   "grid": [
+    272,
+    214,
+    183
+   ],
+   "solidShare": 0.2051,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.2051
+   },
+   "rawArea": 12.219,
+   "level": -2.0,
+   "distToRawMean": 0.00199,
+   "distToRawP99": 0.00416,
+   "seconds": 8.7
+  },
+  "lumP5P95": [
+   0.275,
+   1.653
+  ],
+  "lightingMinMax": [
+   0.326,
+   1.628
+  ],
+  "gainMinMax": [
+   0.615,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.532,
+    "cageExtrusion": 0.028,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.009,
+    "hiToLodMax": 0.0141,
+    "hiToLodP99": 0.0074,
+    "hiToLodMean": 0.0019,
+    "rawMedianLin": 0.2628,
+    "rawP5P95Ratio": 3.71,
+    "contrastGamma": 1.0,
+    "aoMean": 0.954,
+    "coverage": 0.749,
+    "normalFlipped": 0.0,
+    "bytes": 410296,
+    "seconds": 17.1
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.545,
+    "cageExtrusion": 0.046,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.014,
+    "hiToLodMax": 0.0284,
+    "hiToLodP99": 0.0157,
+    "hiToLodMean": 0.0039,
+    "rawMedianLin": 0.2624,
+    "rawP5P95Ratio": 3.75,
+    "contrastGamma": 1.0,
+    "aoMean": 0.957,
+    "coverage": 0.683,
+    "normalFlipped": 0.0,
+    "bytes": 150544,
+    "seconds": 11.9
+   }
+  },
+  "collisionRadius": 0.433,
+  "collisionSpheres": [
+   [
+    0.3056,
+    0.0278,
+    -0.1389,
+    0.4123
+   ],
+   [
+    -0.4167,
+    -0.0833,
+    0.1944,
+    0.3664
+   ],
+   [
+    0.4722,
+    0.1389,
+    -0.25,
+    0.3497
+   ],
+   [
+    0.0278,
+    -0.0278,
+    -0.0278,
+    0.3363
+   ],
+   [
+    -0.6389,
+    -0.1944,
+    0.25,
+    0.2436
+   ],
+   [
+    -0.3056,
+    -0.1389,
+    0.0833,
+    0.3263
+   ],
+   [
+    0.5278,
+    0.0278,
+    -0.1389,
+    0.3217
+   ],
+   [
+    -0.4167,
+    -0.1944,
+    0.3611,
+    0.2643
+   ],
+   [
+    0.3056,
+    0.1944,
+    -0.0278,
+    0.2893
+   ],
+   [
+    0.25,
+    0.1944,
+    -0.25,
+    0.2896
+   ],
+   [
+    -0.4722,
+    -0.1944,
+    0.1389,
+    0.307
+   ],
+   [
+    0.3056,
+    -0.0278,
+    0.0278,
+    0.3072
+   ]
+  ],
+  "sphereCoverage": 0.69,
+  "unitSphereFill": 0.245,
+  "kind": "small",
+  "seconds": 45.7
+ },
+ "rock_06": {
+  "raw": "source/meteors/raw/rock_06.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    -0.00054,
+    0.00079,
+    0.00971
+   ],
+   "scale": 1.89993
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 416388,
+   "parts": 1,
+   "grid": [
+    246,
+    276,
+    234
+   ],
+   "solidShare": 0.2813,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.2813
+   },
+   "rawArea": 18.027,
+   "level": -2.0,
+   "distToRawMean": 0.00203,
+   "distToRawP99": 0.00391,
+   "seconds": 13.8
+  },
+  "lumP5P95": [
+   0.162,
+   1.731
+  ],
+  "lightingMinMax": [
+   0.18,
+   1.68
+  ],
+  "gainMinMax": [
+   0.6,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.498,
+    "cageExtrusion": 0.031,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0089,
+    "hiToLodMax": 0.0166,
+    "hiToLodP99": 0.0074,
+    "hiToLodMean": 0.0019,
+    "rawMedianLin": 0.2356,
+    "rawP5P95Ratio": 5.04,
+    "contrastGamma": 0.93,
+    "aoMean": 0.964,
+    "coverage": 0.672,
+    "normalFlipped": 0.0,
+    "bytes": 333196,
+    "seconds": 14.5
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.451,
+    "cageExtrusion": 0.061,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.019,
+    "hiToLodMax": 0.0408,
+    "hiToLodP99": 0.0173,
+    "hiToLodMean": 0.0043,
+    "rawMedianLin": 0.2357,
+    "rawP5P95Ratio": 5.28,
+    "contrastGamma": 0.904,
+    "aoMean": 0.967,
+    "coverage": 0.583,
+    "normalFlipped": 0.0,
+    "bytes": 116388,
+    "seconds": 8.0
+   }
+  },
+  "collisionRadius": 0.795,
+  "collisionSpheres": [
+   [
+    0.0278,
+    -0.0833,
+    0.0278,
+    0.6092
+   ],
+   [
+    -0.0833,
+    0.0278,
+    -0.1389,
+    0.5549
+   ],
+   [
+    -0.1944,
+    0.25,
+    0.0278,
+    0.4399
+   ],
+   [
+    0.25,
+    -0.0833,
+    0.0833,
+    0.4972
+   ],
+   [
+    0.0278,
+    -0.1389,
+    0.4167,
+    0.373
+   ],
+   [
+    0.25,
+    -0.1389,
+    -0.1944,
+    0.4184
+   ],
+   [
+    -0.0278,
+    0.0833,
+    -0.4722,
+    0.3426
+   ],
+   [
+    -0.3611,
+    -0.0278,
+    0.0833,
+    0.3758
+   ],
+   [
+    0.25,
+    -0.25,
+    0.3056,
+    0.3809
+   ],
+   [
+    -0.4167,
+    0.1389,
+    -0.4167,
+    0.25
+   ],
+   [
+    -0.3611,
+    -0.25,
+    -0.3056,
+    0.2625
+   ],
+   [
+    0.1389,
+    -0.25,
+    -0.3611,
+    0.3244
+   ]
+  ],
+  "sphereCoverage": 0.658,
+  "unitSphereFill": 0.516,
+  "kind": "small",
+  "seconds": 45.1
+ },
+ "rock_07": {
+  "raw": "source/meteors/raw/rock_07.glb",
+  "rawParts": 2,
+  "droppedFaces": 8,
+  "normalize": {
+   "center": [
+    0.00097,
+    0.03951,
+    -0.03501
+   ],
+   "scale": 2.07297
+  },
+  "solid": {
+   "tris": 235392,
+   "trisMC": 235392,
+   "parts": 1,
+   "grid": [
+    191,
+    179,
+    277
+   ],
+   "solidShare": 0.19,
+   "closeVoxels": 8,
+   "sharesByClose": {
+    "1": 0.0319,
+    "2": 0.0323,
+    "3": 0.0327,
+    "5": 0.0337,
+    "8": 0.19
+   },
+   "rawArea": 10.786,
+   "level": -2.0,
+   "distToRawMean": 0.00218,
+   "distToRawP99": 0.00919,
+   "seconds": 10.3
+  },
+  "lumP5P95": [
+   0.322,
+   1.583
+  ],
+  "lightingMinMax": [
+   0.385,
+   1.464
+  ],
+  "gainMinMax": [
+   0.683,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.65,
+    "cageExtrusion": 0.026,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0076,
+    "hiToLodMax": 0.0127,
+    "hiToLodP99": 0.0056,
+    "hiToLodMean": 0.0013,
+    "rawMedianLin": 0.1899,
+    "rawP5P95Ratio": 2.79,
+    "contrastGamma": 1.0,
+    "aoMean": 0.974,
+    "coverage": 0.799,
+    "normalFlipped": 0.0008,
+    "bytes": 334712,
+    "seconds": 19.4
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.515,
+    "cageExtrusion": 0.039,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0113,
+    "hiToLodMax": 0.0235,
+    "hiToLodP99": 0.0126,
+    "hiToLodMean": 0.0028,
+    "rawMedianLin": 0.19,
+    "rawP5P95Ratio": 2.75,
+    "contrastGamma": 1.0,
+    "aoMean": 0.975,
+    "coverage": 0.628,
+    "normalFlipped": 0.0001,
+    "bytes": 122588,
+    "seconds": 8.9
+   }
+  },
+  "collisionRadius": 0.546,
+  "collisionSpheres": [
+   [
+    -0.0278,
+    -0.1389,
+    0.0278,
+    0.4022
+   ],
+   [
+    -0.0278,
+    0.0833,
+    0.0833,
+    0.3957
+   ],
+   [
+    0.0833,
+    -0.3056,
+    -0.0278,
+    0.3444
+   ],
+   [
+    -0.1389,
+    0.5278,
+    0.1389,
+    0.2295
+   ],
+   [
+    0.0278,
+    -0.0833,
+    -0.0833,
+    0.3822
+   ],
+   [
+    0.0278,
+    -0.5833,
+    -0.1389,
+    0.2163
+   ],
+   [
+    -0.1944,
+    -0.1389,
+    -0.0833,
+    0.2996
+   ],
+   [
+    0.1389,
+    -0.1389,
+    -0.0278,
+    0.3604
+   ],
+   [
+    -0.0278,
+    -0.3056,
+    -0.0833,
+    0.3459
+   ],
+   [
+    0.0833,
+    -0.1389,
+    0.1389,
+    0.3299
+   ],
+   [
+    -0.0833,
+    0.3056,
+    0.0833,
+    0.2987
+   ],
+   [
+    -0.25,
+    -0.0278,
+    0.0278,
+    0.2784
+   ]
+  ],
+  "sphereCoverage": 0.667,
+  "unitSphereFill": 0.209,
+  "kind": "small",
+  "seconds": 46.3
+ },
+ "rock_08": {
+  "raw": "source/meteors/raw/rock_08.glb",
+  "rawParts": 1,
+  "droppedFaces": 0,
+  "normalize": {
+   "center": [
+    -0.00065,
+    0.06566,
+    0.00112
+   ],
+   "scale": 2.01944
+  },
+  "solid": {
+   "tris": 250000,
+   "trisMC": 448412,
+   "parts": 1,
+   "grid": [
+    262,
+    258,
+    263
+   ],
+   "solidShare": 0.2658,
+   "closeVoxels": 1,
+   "sharesByClose": {
+    "1": 0.2658
+   },
+   "rawArea": 19.561,
+   "level": -2.0,
+   "distToRawMean": 0.00198,
+   "distToRawP99": 0.004,
+   "seconds": 16.6
+  },
+  "lumP5P95": [
+   0.423,
+   1.65
+  ],
+  "lightingMinMax": [
+   0.486,
+   1.58
+  ],
+  "gainMinMax": [
+   0.633,
+   1.8
+  ],
+  "lod": {
+   "pc": {
+    "tris": 2500,
+    "texture": 1024,
+    "uvFill": 0.5,
+    "cageExtrusion": 0.041,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0135,
+    "hiToLodMax": 0.0246,
+    "hiToLodP99": 0.0098,
+    "hiToLodMean": 0.0025,
+    "rawMedianLin": 0.2633,
+    "rawP5P95Ratio": 2.92,
+    "contrastGamma": 1.0,
+    "aoMean": 0.937,
+    "coverage": 0.763,
+    "normalFlipped": 0.0001,
+    "bytes": 455744,
+    "seconds": 17.6
+   },
+   "mobile": {
+    "tris": 800,
+    "texture": 512,
+    "uvFill": 0.413,
+    "cageExtrusion": 0.068,
+    "sharpEdges": 0,
+    "lodToHiMax": 0.0278,
+    "hiToLodMax": 0.0462,
+    "hiToLodP99": 0.0245,
+    "hiToLodMean": 0.0057,
+    "rawMedianLin": 0.2624,
+    "rawP5P95Ratio": 2.82,
+    "contrastGamma": 1.0,
+    "aoMean": 0.94,
+    "coverage": 0.572,
+    "normalFlipped": 0.0001,
+    "bytes": 150320,
+    "seconds": 13.4
+   }
+  },
+  "collisionRadius": 0.787,
+  "collisionSpheres": [
+   [
+    -0.0278,
+    -0.0278,
+    -0.0278,
+    0.5423
+   ],
+   [
+    -0.1389,
+    0.25,
+    0.1389,
+    0.5106
+   ],
+   [
+    0.25,
+    -0.1389,
+    0.25,
+    0.472
+   ],
+   [
+    0.0833,
+    -0.1944,
+    0.0833,
+    0.5325
+   ],
+   [
+    -0.0278,
+    0.1389,
+    -0.25,
+    0.4454
+   ],
+   [
+    -0.1389,
+    0.0833,
+    0.25,
+    0.4945
+   ],
+   [
+    -0.0278,
+    0.3611,
+    0.0278,
+    0.4561
+   ],
+   [
+    -0.25,
+    0.25,
+    0.0833,
+    0.4833
+   ],
+   [
+    0.25,
+    -0.3611,
+    0.1944,
+    0.4183
+   ],
+   [
+    -0.3056,
+    -0.0833,
+    -0.25,
+    0.3288
+   ],
+   [
+    0.4167,
+    -0.0833,
+    0.0833,
+    0.3536
+   ],
+   [
+    0.0833,
+    -0.0278,
+    -0.25,
+    0.4066
+   ]
+  ],
+  "sphereCoverage": 0.653,
+  "unitSphereFill": 0.546,
+  "kind": "small",
+  "seconds": 56.9
+ }
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05070d">
+  <title>Hole: meteor viewer</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">
+    { "imports": { "three": "../game/vendor/three.module.js", "three/addons/": "../game/vendor/addons/" } }
+  </script>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #05070d; color: #aab3c6;
+                 font: 13px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+    canvas:active { cursor: grabbing; }
+    #panel { position: fixed; top: max(10px, env(safe-area-inset-top)); left: max(10px, env(safe-area-inset-left));
+             width: min(270px, calc(100vw - 20px)); box-sizing: border-box; padding: 10px 12px; border-radius: 10px;
+             background: rgba(10, 13, 22, 0.78); backdrop-filter: blur(6px); border: 1px solid #1c2233; }
+    #panel h1 { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #dfe4ee; display: flex;
+                justify-content: space-between; align-items: center; }
+    #panel.closed .body { display: none; }
+    button, .seg a { font: inherit; color: #c9d0de; background: #151a28; border: 1px solid #262e44;
+                     border-radius: 6px; padding: 4px 8px; cursor: pointer; text-decoration: none; }
+    button.on, .seg a.on { background: #2a3350; border-color: #4a5784; color: #fff; }
+    .row { display: flex; align-items: center; gap: 6px; margin: 7px 0; flex-wrap: wrap; }
+    .row label { min-width: 62px; color: #8d97ad; }
+    .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+    input[type=range] { flex: 1; min-width: 110px; }
+    #stats { margin-top: 8px; font: 12px/1.5 ui-monospace, Consolas, monospace; color: #8d97ad; white-space: pre; }
+    #legend { margin-top: 6px; font-size: 11px; color: #6c7590; }
+    #loading { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center;
+               justify-content: center; gap: 12px; background: #05070d; transition: opacity 0.4s; }
+    #loading.done { opacity: 0; pointer-events: none; }
+    #bar { width: min(320px, 70vw); height: 4px; background: #151a28; border-radius: 2px; overflow: hidden; }
+    #bar div { height: 100%; width: 0; background: #8fa3d8; transition: width 0.15s; }
+    #error { color: #e08a8a; max-width: 80vw; text-align: center; }
+  </style>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="panel">
+    <h1><span>Meteor viewer</span><button id="toggle" type="button">Hide</button></h1>
+    <div class="body">
+      <div class="row"><label>Set</label><div class="seg" id="sets">
+        <a href="?set=pc" data-set="pc">PC</a><a href="?set=mobile" data-set="mobile">Mobile</a></div></div>
+      <div class="row"><label>Tint</label><div class="seg" id="tints">
+        <button type="button" data-tint="mixed" class="on">Mixed</button>
+        <button type="button" data-tint="gray">Gray</button>
+        <button type="button" data-tint="decoy">Decoy</button>
+        <button type="button" data-tint="exploder">Exploder</button></div></div>
+      <div class="row"><label>Decoy</label><input id="shade" type="range" min="0" max="1" step="0.01" value="0.5"
+        aria-label="Decoy shade from pale to deep yellow"></div>
+      <div class="row"><label>Distance</label><input id="distance" type="range" min="0" max="1" step="0.001" value="0"
+        aria-label="Distance into the fog"></div>
+      <div class="row"><label>Spin</label><button id="spin" type="button" class="on">On</button>
+        <label style="min-width:0;margin-left:8px">Fog</label><button id="fog" type="button" class="on">On</button></div>
+      <div id="stats">loading</div>
+      <div id="legend">Order: rock_01–08, big_01–03, frag_01–04 (left to right, top to bottom). Drag to turn,
+        double-click to reset.</div>
+    </div>
+  </div>
+  <div id="loading"><div>Loading meteors</div><div id="bar"><div></div></div><div id="error"></div></div>
+  <script type="module" src="viewer.js"></script>
+</body>
+</html>
