@@ -13,10 +13,11 @@ export async function loadManifest() {
 
 // Returns { small: [shape], big: [shape], fragments: [shape] }, each list sorted by id.
 // shape = { id, group, geometry, material, collisionRadius, collisionSpheres, tris, placeholder }
-// onProgress(done, total) is called after every file.
-export async function loadMeteors(manifest, set, onProgress = () => {}) {
-  const entries = Object.entries(manifest.meteors ?? {}).flatMap(([group, list]) =>
-    list.map((entry) => ({ group, entry })));
+// onProgress(done, total) is called after every file. groups: which groups to load (default all).
+export async function loadMeteors(manifest, set, onProgress = () => {}, { groups = null } = {}) {
+  const entries = Object.entries(manifest.meteors ?? {})
+    .filter(([group]) => !groups || groups.includes(group))
+    .flatMap(([group, list]) => list.map((entry) => ({ group, entry })));
   const loader = new GLTFLoader();
   const out = { small: [], big: [], fragments: [] };
   let done = 0;

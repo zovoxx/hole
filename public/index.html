@@ -2,25 +2,71 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#04060c">
+  <!-- no zoom (owner's wish): iOS ignores user-scalable=no, so game/input.js also cancels every touch -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#05070d">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Hole: fly through dark space, dodge meteors, sink deeper. One hit ends the run.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Hole">
   <title>Hole</title>
-  <link rel="icon" href="data:,">
-  <!-- Placeholder until Contoo 1 replaces this page with the game. -->
-  <style>
-    html, body { margin: 0; height: 100%; background: #04060c; color: #8a93a8; }
-    body {
-      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
-      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-      background: radial-gradient(circle at 50% 50%, #000 0%, #04060c 45%, #0a0d18 100%);
-    }
-    h1 { margin: 0; font-weight: 200; font-size: clamp(3rem, 14vw, 8rem); letter-spacing: 0.4em;
-         padding-left: 0.4em; color: #c9cfdc; }
-    p { margin: 0; font-size: 0.9rem; letter-spacing: 0.2em; text-transform: uppercase; opacity: 0.6; }
-  </style>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/png" href="./icons/icon-192.png">
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="./game/style.css">
+  <script type="importmap">
+    { "imports": { "three": "./game/vendor/three.module.js", "three/addons/": "./game/vendor/addons/" } }
+  </script>
 </head>
-<body>
-  <h1>Hole</h1>
-  <p>In development</p>
+<body data-mode="loading">
+  <canvas id="view"></canvas>
+  <div id="vignette"></div>
+  <div id="edge"></div>
+
+  <div id="hud">
+    <div id="cross"></div>
+    <div id="circle"></div>
+    <div id="timer">00:00.0</div>
+    <div id="pad-left" class="pad" aria-hidden="true">
+      <div id="btn-left" class="btn"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></div>
+      <div id="btn-right" class="btn"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div>
+    </div>
+    <div id="pad-right" class="pad" aria-hidden="true">
+      <div id="btn-up" class="btn"><svg viewBox="0 0 24 24"><path d="m5 15 7-7 7 7"/></svg></div>
+      <div id="btn-down" class="btn"><svg viewBox="0 0 24 24"><path d="m5 9 7 7 7-7"/></svg></div>
+    </div>
+  </div>
+
+  <section id="loading" class="screen shown">
+    <div class="small-title">Hole</div>
+    <div id="bar"><div></div></div>
+    <p id="load-error"></p>
+  </section>
+
+  <section id="start" class="screen">
+    <h1>Hole</h1>
+    <p id="start-prompt" class="prompt">Tap to start</p>
+    <button class="fs" type="button" hidden>
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Fullscreen</span>
+    </button>
+    <p id="a2hs" class="hint" hidden>Fullscreen on iPhone: Share, then Add to Home Screen</p>
+    <p id="start-hint" class="hint"></p>
+    <p id="start-best" class="best"></p>
+  </section>
+
+  <section id="over" class="screen">
+    <p class="label">You lasted</p>
+    <div id="over-time" class="time">00:00.0</div>
+    <p id="over-best" class="best"></p>
+    <p id="over-prompt" class="prompt">Tap to fly again</p>
+    <button class="fs" type="button" hidden>
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Fullscreen</span>
+    </button>
+  </section>
+
+  <noscript><p class="noscript">Hole needs JavaScript and WebGL.</p></noscript>
+  <script type="module" src="./game/main.js"></script>
 </body>
 </html>

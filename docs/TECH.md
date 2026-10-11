@@ -19,13 +19,14 @@ something works better, and update this file when you do. All numbers are starti
 
 | File | Job |
 | --- | --- |
-| `main.js` | Boot, game states (loading → start → run → game over), main loop |
+| `main.js` | Boot, game states (loading → start → run → hit → game over), main loop (`frame` draws, `tick` is one game step), hit effect, camera FOV |
 | `config.js` | Every tunable number in one place (speeds, ranges, curves, colors) |
 | `device.js` | Picks the `pc` or `mobile` asset set; `?set=pc` / `?set=mobile` overrides it for testing |
 | `loader.js` | Reads `assets/manifest.json`, loads the chosen set, drives the loading bar, falls back to placeholder meshes if a file is missing |
 | `input.js` | Keyboard (WASD) and multi-touch buttons → held directions |
 | `flight.js` | Circle, turning momentum, forward speed, gravity drift on the player |
-| `world.js` | Floating origin, spawning and recycling meteors around the player |
+| `world.js` | Floating origin, the meteor field (inflow, turn fill, dropping), collision, instance writing |
+| `space.js` | Starfield, dust motes, the drifting dust/haze sprites (murk) |
 | `meteors.js` | Meteor types, instanced rendering, tint/crack/pulse shader, fuses, explosions, fragments |
 | `sprites.js` | Loads the dust / haze / flash sprite textures from the manifest; sprite materials (tint, normal or additive) |
 | `gravity.js` | Big/massive pull on meteors and on the player, swarms, escape gaps |
@@ -33,25 +34,35 @@ something works better, and update this file when you do. All numbers are starti
 | `difficulty.js` | The single difficulty curve and every value derived from it |
 | `fx.js` | Camera effect stack: shake layers, lean/roll, edge darkening, stretch, explosion flash lights |
 | `audio.js` | Music loops and synthesized sounds |
-| `ui.js` | HUD (cross, circle, timer, touch buttons) and the start / game-over screens |
+| `ui.js` | HUD (cross, circle, timer, touch buttons), the loading / start / game-over screens, fullscreen, best time |
+| `style.css` | Page, HUD and screen styles (sizes from `--u` = 1% of min(width, height)) |
 
 ## Rendering and layers
 
 - One full-screen WebGL canvas shows space. Above it, a DOM layer for edge darkening, and above that the HUD
   (cross, circle, timer, buttons) and screens. Camera effects only touch the canvas camera and the darkening
   layer, so the HUD can never shake, roll or flash.
-- Background: a procedural starfield computed from view direction in a shader (hash-based stars on a
-  direction grid), so it is perfectly even with no top, bottom or seams. Dust: procedural motes near the
-  camera (speed feel) plus the dust/haze sprites from the conto, tinted by depth.
-- Fog: exponential-squared, same color as the background, so far meteors are washed out. The background/fog
-  color shifts from blue-black to red-black with difficulty, and the dust gets denser.
+- Background: an even sprinkle of procedural stars at infinity (3,200 points at 1 km around the camera,
+  uniform on the sphere, soft round points, `space.js`), so there is no top, bottom or seam. Dust: motes in a
+  45 m box around the camera that wraps in the vertex shader (speed feel) plus a few big dust/haze sprites from
+  the conto drifting in the murk (spawned and dropped like the meteors, thinning out as you get close).
+- Fog: exponential-squared, exactly the background color, reaching 2% visibility at the field's radius
+  (`WORLD.fogAtRadius`), so far meteors are washed out and a meteor at the edge is gone. The background/fog
+  color shifts from blue-black to red-black with difficulty (Contoo 3), and the dust gets denser.
+- No tone mapping (`NoToneMapping`): the scene is dark, the yellows stay yellow, and fog blends linearly. With
+  Neutral tone mapping the background (not tone mapped) and fully fogged rocks (tone mapped) differ, and its
+  dark-range curve squares contrast, so fogged rocks showed as dark silhouettes.
+- Lights ride with the camera (ambient + key from upper left + a faint rim from ahead), so rocks look the same
+  whichever way you face: no lighting cue for "up".
 - Meteors: one `InstancedMesh` per rock shape. Per-instance attributes: tint, crack strength, pulse phase,
   fade. The shader extends `MeshStandardMaterial` (`onBeforeCompile`):
   - Tint multiplies the neutral-gray base color (gray rock, pale→deep yellow decoy, deepest-yellow exploder).
   - Cracks are procedural (3D Voronoi edges in object space) and emissive; their strength is multiplied by a
     "tell" factor that is 0 far away, faint at mid distance and full up close. The same factor drives the
     dust ring of massive meteors.
-  - Fade-in uses dithered (hashed) alpha, so there is no transparency sorting and nothing pops.
+  - Fade-in (`aFade`) is extra fog: the fogged colour is blended further toward the fog colour, so a rock
+    arriving at the far edge comes out of the murk smoothly. No transparency, no sorting. (A dithered fade
+    showed as hatched discs on big rocks.)
 - Explosion flash: a small pool of point lights (max 2 active) plus an additive glow sprite at the explosion.
   Never a full-screen flash.
 - The camera never uses `lookAt` with a fixed up vector. Orientation is a quaternion that only changes by
@@ -64,7 +75,7 @@ something works better, and update this file when you do. All numbers are starti
 | Nearest | < 60 | Cracks, pulse and dust ring obvious |
 | Mid | 60–150 | Tells faint; fuses start around 150 |
 | Mid-far | 150–250 | Shapes and washed-out colors, no tells |
-| Far | 250–400 | Dark silhouettes in fog; meteors spawn and fade in at ~400 |
+| Far | 250–300 | Ghosts in the fog; meteors arrive and fade in at 275–300 (`WORLD.radius` 300) |
 
 ## Flight model
 
@@ -87,17 +98,43 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 
 - **Floating origin:** the player is always at (0,0,0); meteors move instead. No precision problems in long
   runs.
-- **Spawning:** keep a target number of meteors (from difficulty) in a sphere of ~400 m, but never in the
-  rear cone (more than ~100° from where the camera faces). New meteors appear only at the far edge or outside
-  the camera frustum, and fade in from fully fogged.
-- **Recycling:** a meteor is removed only when it is out of view (behind, outside the frustum, or beyond the
-  fog). When the player turns, under-filled directions outside the frustum are refilled first, so the new
-  direction is already full.
+- **The field** (`world.js`): space is a uniform random field of meteors with density ρ (per m³), kept only
+  inside a cone around where the camera faces, out to `WORLD.radius` (300 m). The cone's half-angle is the
+  view's corner + 15° (`keepAngle`, ~65° on a 16:9 screen, ~68° on a portrait phone), so it always reaches past
+  the screen. Nothing exists behind.
+  - **Inflow:** flying forward, the field flows toward you. New meteors enter through the far cap at the rate
+    a uniform field would: ρ · v · π(R·sin keep)². Their flight lines are spread evenly over the cap's
+    projected disc (cosine-weighted entry points), and each appears a random depth up to `fadeBand` (25 m)
+    down its line, inside the fog, fading in. Everything closer comes from there, so the density is even at
+    every distance.
+  - **Turn fill:** turning sweeps the cone into new directions. That thin sliver (solid angle ≈ 2·sin(keep)·δ
+    for a turn of δ) is filled at once, from `sideMin` (40 m) to R, minus what already flows into it from the
+    side (v·sin(keep)·dt across the edge). It lies past the view's corners, so nobody sees rocks arrive, and a
+    turn, even all the way round, always finds space already full. A rock that would touch the view is skipped.
+  - **Dropping:** a meteor that leaves the cone is dropped once it is out of view; past R + 5 m (in the fog)
+    too. A wider view (phone turned to landscape) fills the new ring around the cone at once.
+  - **Start of a run:** the whole cone is filled at once behind the closed view (from 20 m), with the first
+    220 m of the path clear. Behind the start screen meteors do not drift, so the path stays clear.
+  - `tools/test_world.mjs` checks the density is even (±15%) at every distance flying straight and turning,
+    that nothing new appears in view except faded at the far edge, and that nothing comes from behind.
+- **Density from the difficulty:** `DIFFICULTY.pathGap` is the seconds between rocks in your path if you flew
+  straight (12 s → 3 s). ρ = 1 / (pathGap · speed · σ), with σ the mean area of your path a rock blocks (its
+  collision spheres seen from a random direction, as a disc, plus the player's radius, over shapes and sizes;
+  `effectiveRadius` and `meanCrossSection` in `world.js`). Measured: one per 7.9 s for a planned 8 s. Past
+  `WORLD.maxMeteors` (3,000 in the cone) rocks get bigger instead of more (same on PC and mobile).
+- **Sizes:** small shapes 4–11 m radius, big shapes 14–30 m (4% of the count; plain gray rocks until
+  Contoo 2), log-uniform; drift up to 0.3 × player speed (big 40% of that); spin 0.05–0.6 rad/s.
+- **Drawing:** every frame only the meteors whose bounding sphere is in view are written into their shape's
+  `InstancedMesh` (~250 at the start, ~600 at full difficulty).
 - **Nothing from behind:** meteor speeds stay below player speed (fragments and slingshots are the
   exception and are recycled once they are behind and out of view).
 - **Difficulty is applied at spawn time only:** each meteor stores its type, color and speed when it spawns.
-- **Collision:** the player is a small sphere (~0.5 m). Each rock has a `collisionRadius` from the manifest
-  slightly inside its surface, scaled per instance, so hits feel fair.
+- **Collision:** the player is a 0.5 m sphere. Each rock's `collisionSpheres` from the manifest (5% under the
+  surface, rotated and scaled with the instance) are tested against the player's sphere with a swept test
+  along this frame's relative motion, so nothing tunnels through at speed.
+- **Hit:** a 0.75 s effect: you bounce back off the rock (recoil 0.6 × speed, dying out in 0.25 s), the view
+  kicks (a 4° wobble) and closes in from the edges like a hole (DOM layer, never a flash), then the game-over
+  screen. A new run reopens the view over 0.5 s.
 
 ## Gravity, swarms and escape gaps
 
@@ -118,8 +155,10 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 
 ## Difficulty curve
 
-- `t` = seconds survived. One smooth curve, e.g. `D(t) = 1 − e^(−t/40)` (fast first minute) plus a slow
-  forever term `0.15 · ln(1 + t/180)`.
+- `t` = seconds survived. One smooth curve, `D(t) = 1 − e^(−t/40)` (fast first minute) plus a slow
+  forever term `0.15 · ln(1 + t/180)` (`difficulty.js`). Contoo 1 drives forward speed (40 → 70 m/s, linear in
+  D, past D = 1 too) and the path gap (12 → 3 s, geometric in D): at 1 min 65 m/s and 3.9 s, at 10 min
+  77 m/s and 2.2 s.
 - Every knob is a function of `D`: forward speed, meteor count, wall interval (15 s → 6 s floor), wall warning
   (4 s → 2 s floor), exploder share, massive share, pull strength, decoy-to-exploder color distance,
   background color, dust density.
@@ -176,12 +215,21 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   ignores `user-scalable=no`. Test fast double taps on the buttons and on empty screen on iPhone and Android.
 - Fewer Safari fullscreen warnings (owner's wish; iPad Safari watches touches and keys in element fullscreen
   and shows a warning in the middle of the screen, and has an entry banner): ask for fullscreen only from the
-  fullscreen button on the start screen, never automatically and never mid-run; stay in fullscreen across
-  game over and restart (never exit and re-enter); controls are held buttons where thumbs stay still (no
+  fullscreen button (start screen; on the game-over screen only while not in fullscreen), never automatically
+  and never mid-run; stay in fullscreen across game over and restart (never exit and re-enter; the game-over
+  screen has no exit button); controls are held buttons where thumbs stay still (no
   swipe or drag controls, fast-moving touches raise Safari's suspicion score); no text inputs; on iPad with a
   hardware keyboard, typing keys in fullscreen can trigger the warning, so test WASD there and, if it does,
   show the keyboard hint only outside fullscreen. Keep the "Add to Home Screen" hint (a home-screen app has no
   warnings). Test on an iPad: several full runs in fullscreen without a warning.
+- As built (Contoo 1): every touch on the page is `preventDefault`-ed (`touchstart`/`touchmove`/`touchend`,
+  passive: false) and the buttons use pointer events, so touches never make clicks or zooms; the fullscreen
+  button reacts on `touchend` (a user gesture everywhere) or `click` (mouse, keyboard) and never starts the
+  run. A key held through a crash (auto-repeat) does not restart; restarting needs a fresh press after 0.45 s.
+  The start screen says "W A S D to steer" without touch and "Hold the arrows to steer" with touch.
+- Camera: the short side of the screen always shows 60°; the long side at most 100° (portrait phones get a
+  taller view, ultra-wide screens a lower one). Touch buttons: min(124 px, max(64 px, 20% of the short side)),
+  multi-touch, each thumb holds the nearest button it is on (15% slop), so two thumbs give diagonals.
 - Pixel ratio capped (about 1.5 on mobile, 2 on PC); adaptive quality if frame time stays high.
 - Best time in `localStorage` (wrapped in try/catch).
 
@@ -261,6 +309,15 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
 
 - `python tools/check_public.py`: file limits, lowercase names, no LFS pointer files in `public/`, every
   manifest path exists.
+- `node tools/test_world.mjs` (a few seconds, no browser): flight model, difficulty curve, meteor field
+  (even density, nothing pops, nothing from behind, path-gap calibration).
+- `NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]` (Playwright,
+  ~5 min): serves `public/` itself and plays the game on desktop and on iPhone, Android and iPad emulation
+  (portrait, landscape, rotation): no console errors or 404s, keys and two-thumb touch, circle speed and
+  heavy counter-steer, fullscreen button, hit → game over → restart, best time, fast double taps never zoom.
+  Headless Chromium draws with a software rasterizer (~0.3–1 s per frame), so the checks run on the game's
+  test clock: `?debug` exposes `hole.advance(seconds)` (the same per-frame code in fixed 1/60 s steps),
+  `hole.setRendering(false)`, `hole.setTestOnly(true)` (only `hole.placeAhead()` rocks can hit) and a read-out
+  of fps, meteor counts and the flight state.
 - Serve and look at the browser console: `npx wrangler dev` (http://localhost:8787) or
-  `python -m http.server 8000 -d public`. In a cloud session, use Playwright (preinstalled) to load the page
-  and fail on console errors or 404s.
+  `python -m http.server 8000 -d public`.

@@ -84,6 +84,13 @@ go in a permanent folder (`%USERPROFILE%\Documents\HoleWork\`), never in Temp.
   Pillow, pymeshlab).
 - Local test server: `python -m http.server 8000 -d public`. Browsers cache the ES modules: force a reload
   after editing them.
+- Contoo in the cloud: headless Chromium draws with a software rasterizer (~0.3–1 s per frame), so wall-clock
+  tests of the game fail. Test on the game's clock (`?debug`: `hole.advance(s)`, `hole.setRendering(false)`)
+  and switch drawing on only for screenshots (`tools/test_game.mjs`). Infinite CSS animations starve
+  `requestAnimationFrame` there: keep screens static. `node tools/test_world.mjs` tests the logic in seconds.
+- Look at screenshots of every visual change. Fog must match the background exactly: with Neutral tone mapping
+  it doesn't (fogged rocks showed as dark silhouettes), so the game uses no tone mapping; a dithered fade-in
+  showed as hatched discs, so fade-in is extra fog.
 
 ## Folder layout
 
