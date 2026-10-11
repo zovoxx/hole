@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#05070d">
+  <title>Hole: music cycle test</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">
+    { "imports": { "three": "../game/vendor/three.module.js", "three/addons/": "../game/vendor/addons/" } }
+  </script>
+  <style>
+    html, body { margin: 0; background: #05070d; color: #aab3c6; font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: max(16px, env(safe-area-inset-top)) 16px 32px; }
+    h1 { font-size: 18px; color: #e6eaf2; margin: 0 0 4px; }
+    p { margin: 0 0 14px; color: #7d879c; font-size: 13px; }
+    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+    .row label { min-width: 70px; color: #8d97ad; }
+    button { font: inherit; color: #d6dcea; background: #151a28; border: 1px solid #2a3350; border-radius: 8px;
+             padding: 8px 14px; cursor: pointer; }
+    button.on { background: #2a3350; border-color: #6274b0; color: #fff; }
+    #play { font-size: 16px; padding: 10px 22px; }
+    #read { font: 15px/1.6 ui-monospace, Consolas, monospace; color: #c9d0de; white-space: pre; background: #0b0f19;
+            border: 1px solid #1c2233; border-radius: 10px; padding: 10px 12px; margin: 12px 0; }
+    .bars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .lv { background: #0f1422; border-radius: 6px; padding: 6px 8px; font: 12px ui-monospace, Consolas, monospace; position: relative; overflow: hidden; }
+    .lv i { position: absolute; left: 0; bottom: 0; height: 4px; width: 0; background: #8fa3d8; }
+    #cyc { height: 6px; background: #151a28; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    #cyc div { height: 100%; width: 0; background: linear-gradient(90deg, #3b4a7a, #c0603a); }
+    #msg { color: #e0b46a; min-height: 1.4em; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Music cycle test</h1>
+  <p>The music as a run will play it: level 1 → 4 over 5 minutes, then back to level 1 on a bar line, one step deeper
+    (a semitone higher and faster, more reverb, more sub, a low drone). Speed it up or skip to the end of a cycle to
+    hear the drop. Deepening stops after 3 cycles (15 min).</p>
+  <div class="row"><button id="play" type="button">Play</button><span id="msg"></span></div>
+  <div class="row"><label>Speed</label>
+    <button type="button" data-speed="1" class="on">1×</button><button type="button" data-speed="10">10×</button>
+    <button type="button" data-speed="30">30×</button></div>
+  <div class="row"><label>Jump</label>
+    <button type="button" id="end">Cycle end −15 s</button><button type="button" id="restart">Restart run</button></div>
+  <div class="row"><label>Deeper by</label>
+    <button type="button" data-fx="key" class="on">Key + tempo</button><button type="button" data-fx="reverb" class="on">Reverb</button>
+    <button type="button" data-fx="sub" class="on">Sub</button><button type="button" data-fx="drone" class="on">Drone</button></div>
+  <div id="read">press Play</div>
+  <div class="bars" id="bars"></div>
+  <div id="cyc"><div></div></div>
+</main>
+<script type="module" src="music.js"></script>
+</body>
+</html>

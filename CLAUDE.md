@@ -61,10 +61,27 @@ go in a permanent folder (`%USERPROFILE%\Documents\HoleWork\`), never in Temp.
 - Pixal3D guesses depth from one view: a flat slab seen from above came back as a thick boulder. Pick concepts
   that show the thin side, and check the extents in the `blender_check.py` report.
 - Timings on the laptop: Z-Image ~20 s per 1024² image; Pixal3D ~4–7 min per model (200k faces, 2048
-  textures); `blender_check.py` ~10 s per model; `blender_meteors.py build` ~40–95 s per rock (PC + mobile).
+  textures); `blender_check.py` ~10 s per model; `blender_meteors.py build` ~40–95 s per rock (PC + mobile);
+  ACE-Step 100 s track ~4.3 min from text (the 4B LM writing audio codes is the slow part), 10–20 s
+  audio-to-audio from an existing track (no LM).
+- ACE-Step 1.5 XL Turbo keeps the `bpm` well (127.8–128.1 measured for 128) but drifts by ±10–30 ms around a
+  steady grid; `music_loop.py cut` therefore places the loop end where the drums line up with the start. Its
+  output is loudness-normalised (~−14 dB RMS) whatever the tags.
+- KSampler denoise is quantised with few steps: it runs `int(steps / denoise)` steps, so with 8 steps denoise
+  is effectively 0.67 / 0.73 / 0.80 / 0.89 / 1.0 (0.82–0.88 are all 0.89; 0.92 is a brand-new track). In
+  ACE-Step audio-to-audio 0.67–0.80 keeps the arrangement, 0.89 thins or drops the drums but keeps the beat
+  grid and most harmony. "More intense" tags don't add intensity: generate the hardest level from text and
+  derive the calmer ones from it.
+- Audio on the laptop: no ffmpeg on PATH; Blender's `aud` module reads FLAC/MP3/OGG into numpy and writes
+  MP3/OGG at a set bitrate, so `tools/music_loop.py` runs in Blender's Python.
+- Z-Image sprites on black: "smoke" gives incense curls, "nebula/haze" gives spiral galaxies filling the frame,
+  "flash/glow" gives a flat saturated disc. Say "countless tiny particles", "shapeless fog, not a galaxy, no
+  spiral", "a tiny point of light with a large soft glow, no disc", and "small in the center with wide empty
+  black space all around it".
 - Laptop tools: `git` is GitHub Desktop's bundled one (`%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`,
   not on PATH). System Python has no numpy/Pillow, so image work runs in Blender's Python (`blender -b -P`);
-  mesh work runs in the venv `%USERPROFILE%\Documents\HoleWork\venv` (numpy, scipy, scikit-image, pymeshlab).
+  mesh and sprite work runs in the venv `%USERPROFILE%\Documents\HoleWork\venv` (numpy, scipy, scikit-image,
+  Pillow, pymeshlab).
 - Local test server: `python -m http.server 8000 -d public`. Browsers cache the ES modules: force a reload
   after editing them.
 

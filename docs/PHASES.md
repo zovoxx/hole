@@ -214,8 +214,9 @@ restart.
    blue-black → red-black, thicker dust.
 3. Camera effects: handling rattle, explosion kick, gravity rumble + lean/roll up to ~25° + darker edge +
    slight stretch, near-miss kick. Smooth, stacked, capped; the HUD never moves.
-4. Audio: synthesized whoosh, rumble and boom; the 4 music loops started in sync and crossfaded softly by
-   difficulty (equal-power, over several seconds, never a hard switch); iOS audio unlock.
+4. Audio: synthesized whoosh, rumble and boom; the music from `Music` in `game/audio.js` (written and tested
+   in Conto 3, `/dev/music.html`): loaded with the run, `music.follow(runSeconds, MUSIC)` every frame (5-minute
+   cycles that drop back to calm and come back deeper); iOS audio unlock; a music volume setting.
 5. Tests and `check_public.py`.
 
 **Done when**
@@ -226,7 +227,7 @@ restart.
 - Shakes feel like smooth wobbles; the cross, circle, timer and buttons never move; the lean near a massive
   meteor eases back afterwards.
 - You hear the whoosh, the rumble and the boom; the music gets more intense as the run goes on and you never
-  notice a switch.
+  notice a switch; after 5 minutes it falls back to calm and climbs again, deeper.
 
 **Estimated usage:** ~85%
 

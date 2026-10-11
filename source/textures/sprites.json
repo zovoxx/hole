@@ -1,0 +1,247 @@
+{
+    "note":  "Space sprites: Z-Image Turbo images on black -\u003e tools/make_sprites.py (alpha from brightness, soft radial edge mask, white RGB). Candidates rejected: incense-like smoke curl, feather, crescent, scratch streaks, comet streak, torn leaf, spiral-galaxy hazes, flat-disc flashes.",
+    "sprites":  [
+                    {
+                        "id":  "dust_01",
+                        "kind":  "dust",
+                        "source":  "dust_01_source.png",
+                        "candidate":  "dust_h",
+                        "prompt":  "A soft irregular patch of fine dust, thicker on one side and thinning out into scattered grains. Faint gray cosmic dust in deep space, made of countless tiny particles, soft and diffuse, irregular shape, monochrome grayscale, dimly lit, small in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no stars, no planets, no text.",
+                        "seed":  3,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  1.15,
+                                       "inner":  0.55,
+                                       "outer":  0.94,
+                                       "blur":  0.0,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.0734,
+                        "edge_loss":  0.0352,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/dust_01.webp",
+                                                 "size":  1024,
+                                                 "bytes":  290722,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/dust_01.webp",
+                                                     "size":  512,
+                                                     "bytes":  74682,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "dust_02",
+                        "kind":  "dust",
+                        "source":  "dust_02_source.png",
+                        "candidate":  "dust_b",
+                        "prompt":  "A fan-shaped spray of fine dust particles spreading out from one side, made of tiny grains. Faint gray cosmic dust drifting in deep space, soft smoky translucent texture, monochrome grayscale, dimly lit, isolated in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no stars, no planets, no text.",
+                        "seed":  1,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  1.15,
+                                       "inner":  0.55,
+                                       "outer":  0.94,
+                                       "blur":  0.0,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.0508,
+                        "edge_loss":  0.1429,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/dust_02.webp",
+                                                 "size":  1024,
+                                                 "bytes":  248912,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/dust_02.webp",
+                                                     "size":  512,
+                                                     "bytes":  68996,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "dust_03",
+                        "kind":  "dust",
+                        "source":  "dust_03_source.png",
+                        "candidate":  "dust_i",
+                        "prompt":  "A long faint diagonal drift of dust, wide and blurry, with grains scattered along it. Faint gray cosmic dust in deep space, made of countless tiny particles, soft and diffuse, irregular shape, monochrome grayscale, dimly lit, small in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no stars, no planets, no text.",
+                        "seed":  3,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  1.15,
+                                       "inner":  0.55,
+                                       "outer":  0.94,
+                                       "blur":  0.0,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.0555,
+                        "edge_loss":  0.214,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/dust_03.webp",
+                                                 "size":  1024,
+                                                 "bytes":  204770,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/dust_03.webp",
+                                                     "size":  512,
+                                                     "bytes":  52748,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "dust_04",
+                        "kind":  "dust",
+                        "source":  "dust_04_source.png",
+                        "candidate":  "dust_d",
+                        "prompt":  "A loose oval cloud of fine speckled dust grains, sparse and grainy. Faint gray cosmic dust drifting in deep space, soft smoky translucent texture, monochrome grayscale, dimly lit, isolated in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no stars, no planets, no text.",
+                        "seed":  1,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  1.15,
+                                       "inner":  0.55,
+                                       "outer":  0.94,
+                                       "blur":  0.0,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.0643,
+                        "edge_loss":  0.0129,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/dust_04.webp",
+                                                 "size":  1024,
+                                                 "bytes":  215618,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/dust_04.webp",
+                                                     "size":  512,
+                                                     "bytes":  62092,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "haze_01",
+                        "kind":  "haze",
+                        "source":  "haze_01_source.png",
+                        "candidate":  "haze_e",
+                        "prompt":  "A big soft lumpy puff of fog. Dim murky gray fog in deep space, shapeless, very soft and blurry, uneven blotchy density, low contrast, not a galaxy, no spiral, no stars, small in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no text.",
+                        "seed":  3,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  0.9,
+                                       "inner":  0.42,
+                                       "outer":  0.94,
+                                       "blur":  0.006,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.2083,
+                        "edge_loss":  0.2756,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/haze_01.webp",
+                                                 "size":  1024,
+                                                 "bytes":  110308,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/haze_01.webp",
+                                                     "size":  512,
+                                                     "bytes":  41990,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "haze_02",
+                        "kind":  "haze",
+                        "source":  "haze_02_source.png",
+                        "candidate":  "haze_f",
+                        "prompt":  "A wide uneven bank of fog, stretched sideways, thicker in the middle. Dim murky gray fog in deep space, shapeless, very soft and blurry, uneven blotchy density, low contrast, not a galaxy, no spiral, no stars, small in the center of the frame with wide empty black space all around it, nothing touches the edges of the image, on a pure black background, no text.",
+                        "seed":  3,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  0.9,
+                                       "inner":  0.42,
+                                       "outer":  0.94,
+                                       "blur":  0.006,
+                                       "bloom":  null
+                                   },
+                        "coverage":  0.1427,
+                        "edge_loss":  0.1238,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/haze_02.webp",
+                                                 "size":  1024,
+                                                 "bytes":  55388,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/haze_02.webp",
+                                                     "size":  512,
+                                                     "bytes":  25844,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    },
+                    {
+                        "id":  "flash_01",
+                        "kind":  "flash",
+                        "source":  "flash_01_source.png",
+                        "candidate":  "flash_d",
+                        "prompt":  "A tiny intensely bright white point of light surrounded by a large soft glow that fades gradually and smoothly over a long distance into darkness, like a distant flash seen through fog, no hard edge, no disc, no rays, centered, on a pure black background, no text.",
+                        "seed":  3,
+                        "width":  1024,
+                        "height":  1024,
+                        "workflow":  "tools/workflows/z_image_turbo.json",
+                        "params":  {
+                                       "gamma":  1.6,
+                                       "inner":  0.3,
+                                       "outer":  0.92,
+                                       "blur":  0.0,
+                                       "bloom":  [
+                                                     0.015,
+                                                     0.05,
+                                                     0.12
+                                                 ]
+                                   },
+                        "coverage":  0.0545,
+                        "edge_loss":  0.0842,
+                        "files":  {
+                                      "pc":  {
+                                                 "path":  "textures/pc/flash_01.webp",
+                                                 "size":  512,
+                                                 "bytes":  14172,
+                                                 "edge_max_alpha":  0
+                                             },
+                                      "mobile":  {
+                                                     "path":  "textures/mobile/flash_01.webp",
+                                                     "size":  256,
+                                                     "bytes":  5250,
+                                                     "edge_max_alpha":  0
+                                                 }
+                                  }
+                    }
+                ]
+}

@@ -11,6 +11,8 @@ Usage:
   python tools/comfy_client.py free
   python tools/comfy_client.py zimage --prompt "..." --seed 1 --out C:/work/a.png [--width 1024 --height 1024]
   python tools/comfy_client.py pixal3d --image C:/work/a.png --seed 1 --out C:/work/a.glb [--faces 200000 --tex 2048]
+  python tools/comfy_client.py acestep --tags "..." --seed 1 --out C:/work/a.flac [--bpm 128 --key "D minor"
+         --seconds 120 --init C:/work/b.flac --denoise 0.7]
 """
 import argparse
 import copy
@@ -189,6 +191,42 @@ def pixal3d_workflow(image, seed, faces=200000, tex=2048, prefix="hole/pixal3d",
     return wf
 
 
+def acestep_workflow(tags, seed, bpm=128, keyscale="D minor", seconds=120.0, lyrics="[Instrumental]",
+                     timesignature="4", steps=None, init_audio=None, denoise=1.0, audio_codes=None,
+                     prefix="hole/acestep", wf=None):
+    """ACE-Step 1.5 XL Turbo text-to-music, saved as FLAC (lossless; loops are cut and encoded afterwards).
+
+    init_audio = LoadAudio value (from upload_image) to start from an existing track: its latent is
+    re-noised by `denoise` (audio-to-audio), so tempo, bars and harmony follow it while the tags change
+    the arrangement. The LM audio codes are off by default then, as the node's tooltip advises."""
+    wf = copy.deepcopy(wf or load_workflow("acestep"))
+    enc_id = nodes_of(wf, "TextEncodeAceStepAudio1.5")[0]
+    enc = wf[enc_id]["inputs"]
+    enc.update(tags=tags, lyrics=lyrics, seed=int(seed), bpm=int(bpm), keyscale=keyscale,
+               duration=float(seconds), timesignature=str(timesignature))
+    enc["generate_audio_codes"] = (init_audio is None) if audio_codes is None else bool(audio_codes)
+    one_node(wf, "EmptyAceStep1.5LatentAudio")["inputs"]["seconds"] = float(seconds)
+    ks_id = nodes_of(wf, "KSampler")[0]
+    ks = wf[ks_id]["inputs"]
+    ks["seed"] = int(seed)
+    ks["denoise"] = float(denoise)
+    if steps:
+        ks["steps"] = int(steps)
+    if init_audio is not None:
+        vae = one_node(wf, "VAEDecodeAudio")["inputs"]["vae"]
+        wf["hole_load_audio"] = {"inputs": {"audio": init_audio}, "class_type": "LoadAudio",
+                                 "_meta": {"title": "Load Audio"}}
+        wf["hole_encode_audio"] = {"inputs": {"audio": ["hole_load_audio", 0], "vae": list(vae)},
+                                   "class_type": "VAEEncodeAudio", "_meta": {"title": "VAE Encode Audio"}}
+        ks["latent_image"] = ["hole_encode_audio", 0]
+    save_id = nodes_of(wf, "SaveAudioAdvanced")[0]
+    wf[save_id]["inputs"].update(filename_prefix=prefix, format="flac")
+    for k in [k for k in wf[save_id]["inputs"] if k.startswith("format.")]:
+        del wf[save_id]["inputs"][k]
+    prune(wf, [save_id])
+    return wf
+
+
 # ---------------------------------------------------------------- run
 
 def submit(wf):
@@ -298,6 +336,15 @@ def main():
     p.add_argument("--faces", type=int, default=200000)
     p.add_argument("--tex", type=int, default=2048)
     p.add_argument("--out", required=True)
+    m = sub.add_parser("acestep")
+    m.add_argument("--tags", required=True)
+    m.add_argument("--seed", type=int, default=0)
+    m.add_argument("--bpm", type=int, default=128)
+    m.add_argument("--key", default="D minor")
+    m.add_argument("--seconds", type=float, default=120.0)
+    m.add_argument("--init", help="audio file to start from (audio-to-audio)")
+    m.add_argument("--denoise", type=float, default=1.0)
+    m.add_argument("--out", required=True)
     a = ap.parse_args()
 
     if a.cmd == "stats":
@@ -312,6 +359,10 @@ def main():
         print(run(zimage_workflow(a.prompt, a.seed, a.width, a.height), a.out, ".png"))
     elif a.cmd == "pixal3d":
         print(run(pixal3d_workflow(upload_image(a.image), a.seed, a.faces, a.tex), a.out, ".glb"))
+    elif a.cmd == "acestep":
+        init = upload_image(a.init) if a.init else None
+        print(run(acestep_workflow(a.tags, a.seed, a.bpm, a.key, a.seconds, init_audio=init, denoise=a.denoise),
+                  a.out, ".flac"))
 
 
 if __name__ == "__main__":

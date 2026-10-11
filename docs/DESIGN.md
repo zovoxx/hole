@@ -183,6 +183,8 @@ always at least one gap, sometimes more, wide enough to get through with the hea
 
 - Music is important. It is exciting and pumps more and more adrenaline as the run goes on.
 - Its intensity follows the difficulty. Changes between intensities are soft: you never hear a switch.
+- It climbs from calm to full intensity over about 5 minutes, then falls back to calm and climbs again. Every
+  new climb is deeper: more mystery and more adrenaline, never terrifying or annoying.
 
 ## 11. Difficulty
 

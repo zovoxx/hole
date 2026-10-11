@@ -13,7 +13,11 @@ JOBS.json:
       {"id": "rock_01_s1", "kind": "zimage", "prompt": "...", "seed": 1, "width": 1024, "height": 1024,
        "out": "concepts/rock_01_s1.png"},
       {"id": "rock_01", "kind": "pixal3d", "image": "concepts/rock_01_s1.png", "seed": 1,
-       "faces": 200000, "tex": 2048, "out": "raw/rock_01.glb"}
+       "faces": 200000, "tex": 2048, "out": "raw/rock_01.glb"},
+      {"id": "music_3a", "kind": "acestep", "tags": "...", "seed": 1, "bpm": 128, "keyscale": "D minor",
+       "seconds": 120, "out": "music/music_3a.flac"},
+      {"id": "music_1a", "kind": "acestep", "tags": "...", "seed": 1, "init_audio": "music/music_3a.flac",
+       "denoise": 0.7, "out": "music/music_1a.flac"}                 # audio-to-audio from another track
     ]
   }
 
@@ -71,6 +75,16 @@ def build(job, root):
         wf = cc.pixal3d_workflow(name, job.get("seed", 0), job.get("faces", 200000), job.get("tex", 2048),
                                  prefix="hole/" + job["id"])
         return wf, ".glb"
+    if kind == "acestep":
+        init = None
+        if job.get("init_audio"):
+            src = job["init_audio"]
+            init = cc.upload_image(os.path.normpath(src if os.path.isabs(src) else os.path.join(root, src)))
+        wf = cc.acestep_workflow(job["tags"], job.get("seed", 0), job.get("bpm", 128), job.get("keyscale", "D minor"),
+                                 job.get("seconds", 120), job.get("lyrics", "[Instrumental]"),
+                                 steps=job.get("steps"), init_audio=init, denoise=job.get("denoise", 1.0),
+                                 audio_codes=job.get("audio_codes"), prefix="hole/" + job["id"])
+        return wf, ".flac"
     raise ValueError(f"unknown job kind {kind!r}")
 
 

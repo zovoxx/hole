@@ -1,0 +1,295 @@
+{
+ "family": "A",
+ "level3": "s55",
+ "label": "darksynth chase",
+ "bpm": 128.0,
+ "bars": 32,
+ "beats_per_bar": 4,
+ "key": "C#",
+ "sample_rate": 48000,
+ "pad_seconds": 0.25,
+ "note": "Level 4 from text; levels 3-1 by ACE-Step audio-to-audio from level 4 (same beat grid and harmony). Loops cut by tools/music_loop.py cut, encoded by tools/music_loop.py export.",
+ "loops": [
+  {
+   "id": "music_1",
+   "level": 1,
+   "loopStart": 0.25,
+   "loopEnd": 60.25,
+   "rhoNext": 0.317,
+   "raw": "music_1_raw.flac",
+   "master": "music_1_loop.flac",
+   "candidate": "famA_l1_d86",
+   "generation": {
+    "tags": "dark ambient synth, cyberpunk space, instrumental, 128 BPM, D minor, calm but tense, no drums, no kick, soft pulsing low synth bass, atmospheric pads, suspense, mysterious, minimal",
+    "seed": 31,
+    "seconds": 100,
+    "bpm": 128,
+    "keyscale": "D minor",
+    "from": "music_4 raw (audio-to-audio)",
+    "denoise": 0.86,
+    "denoise_effective": 0.889,
+    "workflow": "tools/workflows/ace_step_1_5_xl_turbo.json"
+   },
+   "cut": {
+    "start_bar": 15,
+    "start_s": 29.5324,
+    "end_s": 89.5325,
+    "end_offset_ms": 16.5,
+    "end_match": 0.995,
+    "source_bpm": 128.035,
+    "stretch": 0.999998,
+    "cents": 0.0,
+    "crossfade_rho": 0.274,
+    "gain_db": -7.02,
+    "rms_db": -20.0,
+    "peak": 0.369
+   },
+   "files": {
+    "pc/music_1.ogg": {
+     "bytes": 1511956,
+     "kbps": 199.9,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 27.9
+    },
+    "pc/music_1.mp3": {
+     "bytes": 1453293,
+     "kbps": 192.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 25.8
+    },
+    "mobile/music_1.ogg": {
+     "bytes": 720083,
+     "kbps": 95.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 19.9
+    },
+    "mobile/music_1.mp3": {
+     "bytes": 726669,
+     "kbps": 96.1,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 20.6
+    }
+   }
+  },
+  {
+   "id": "music_2",
+   "level": 2,
+   "loopStart": 0.25,
+   "loopEnd": 60.25,
+   "rhoNext": 0.339,
+   "raw": "music_2_raw.flac",
+   "master": "music_2_loop.flac",
+   "candidate": "famA_l2_d82",
+   "generation": {
+    "tags": "aggressive darksynth, cyberpunk space chase, instrumental, 128 BPM, D minor, restrained, soft muted kick, light ticking hi-hats, pulsing low bass, quiet arpeggio, suspense",
+    "seed": 41,
+    "seconds": 100,
+    "bpm": 128,
+    "keyscale": "D minor",
+    "from": "music_4 raw (audio-to-audio)",
+    "denoise": 0.82,
+    "denoise_effective": 0.889,
+    "workflow": "tools/workflows/ace_step_1_5_xl_turbo.json"
+   },
+   "cut": {
+    "start_bar": 15,
+    "start_s": 29.5324,
+    "end_s": 89.5325,
+    "end_offset_ms": 16.5,
+    "end_match": 0.995,
+    "source_bpm": 128.035,
+    "stretch": 0.999998,
+    "cents": 0.0,
+    "crossfade_rho": 0.768,
+    "gain_db": -5.2,
+    "rms_db": -18.5,
+    "peak": 0.632
+   },
+   "files": {
+    "pc/music_2.ogg": {
+     "bytes": 1654085,
+     "kbps": 218.7,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 23.0
+    },
+    "pc/music_2.mp3": {
+     "bytes": 1453293,
+     "kbps": 192.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 17.5
+    },
+    "mobile/music_2.ogg": {
+     "bytes": 756564,
+     "kbps": 100.0,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 13.5
+    },
+    "mobile/music_2.mp3": {
+     "bytes": 726669,
+     "kbps": 96.1,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 13.3
+    }
+   }
+  },
+  {
+   "id": "music_3",
+   "level": 3,
+   "loopStart": 0.25,
+   "loopEnd": 60.25,
+   "rhoNext": 0.724,
+   "raw": "music_3_raw.flac",
+   "master": "music_3_loop.flac",
+   "candidate": "famA_l3_s55",
+   "generation": {
+    "tags": "aggressive darksynth, cyberpunk space chase, instrumental, 128 BPM, D minor, driving, steady kick and snare, pulsing bass, arpeggios, tense, building energy, no lead melody",
+    "seed": 55,
+    "seconds": 100,
+    "bpm": 128,
+    "keyscale": "D minor",
+    "from": "music_4 raw (audio-to-audio)",
+    "denoise": 0.65,
+    "denoise_effective": 0.667,
+    "workflow": "tools/workflows/ace_step_1_5_xl_turbo.json"
+   },
+   "cut": {
+    "start_bar": 15,
+    "start_s": 29.5324,
+    "end_s": 89.5325,
+    "end_offset_ms": 16.5,
+    "end_match": 0.995,
+    "source_bpm": 128.035,
+    "stretch": 0.999998,
+    "cents": 0.0,
+    "crossfade_rho": 0.929,
+    "gain_db": -3.26,
+    "rms_db": -17.0,
+    "peak": 0.728
+   },
+   "files": {
+    "pc/music_3.ogg": {
+     "bytes": 1672797,
+     "kbps": 221.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 23.8
+    },
+    "pc/music_3.mp3": {
+     "bytes": 1453293,
+     "kbps": 192.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 18.4
+    },
+    "mobile/music_3.ogg": {
+     "bytes": 773450,
+     "kbps": 102.3,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 14.5
+    },
+    "mobile/music_3.mp3": {
+     "bytes": 726669,
+     "kbps": 96.1,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 14.3
+    }
+   }
+  },
+  {
+   "id": "music_4",
+   "level": 4,
+   "loopStart": 0.25,
+   "loopEnd": 60.25,
+   "rhoNext": 0.0,
+   "raw": "music_4_raw.flac",
+   "master": "music_4_loop.flac",
+   "candidate": "famA_l4",
+   "generation": {
+    "tags": "aggressive darksynth, cyberpunk space chase, instrumental, 128 BPM, D minor, full adrenaline, pounding four-on-the-floor kick, heavy distorted sawtooth bass, fast arpeggios, screaming lead synth, driving, intense, epic",
+    "seed": 21,
+    "seconds": 100,
+    "bpm": 128,
+    "keyscale": "D minor",
+    "from": null,
+    "denoise": 1.0,
+    "denoise_effective": 1.0,
+    "workflow": "tools/workflows/ace_step_1_5_xl_turbo.json"
+   },
+   "cut": {
+    "start_bar": 15,
+    "start_s": 29.5324,
+    "end_s": 89.5325,
+    "end_offset_ms": 16.5,
+    "end_match": 0.995,
+    "source_bpm": 128.035,
+    "stretch": 0.999998,
+    "cents": 0.0,
+    "crossfade_rho": 0.809,
+    "gain_db": -2.33,
+    "rms_db": -16.0,
+    "peak": 0.641
+   },
+   "files": {
+    "pc/music_4.ogg": {
+     "bytes": 1613363,
+     "kbps": 213.3,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 22.5
+    },
+    "pc/music_4.mp3": {
+     "bytes": 1453293,
+     "kbps": 192.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 20.2
+    },
+    "mobile/music_4.ogg": {
+     "bytes": 772991,
+     "kbps": 102.2,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 14.6
+    },
+    "mobile/music_4.mp3": {
+     "bytes": 726669,
+     "kbps": 96.1,
+     "decoded_samples": 2904000,
+     "decoded_sr": 48000,
+     "lag": 0,
+     "snr_db": 14.8
+    }
+   }
+  }
+ ],
+ "key_note": "Requested D minor in the tags; the loops measure with a C# tonal centre (chroma, Krumhansl profiles: C# major/minor). The drone in public/game/config.js uses C#2.",
+ "cycle": {
+  "seconds": 300,
+  "note": "level 1 -> 4 over a cycle, then back to level 1 one step deeper (MUSIC in public/game/config.js)"
+ }
+}

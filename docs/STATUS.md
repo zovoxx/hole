@@ -35,11 +35,31 @@
   - Check sheet `docs/checks/conto2_meteors.jpg` (PC next to mobile; gray / decoy / exploder) + numbers in
     `conto2_meteors.json`. Build numbers per rock in `source/meteors/meteors.json`. Final
     `source/meteors/meteors.blend` (the exported GLBs, pc and mobile collections, textures packed).
+- **Conto 3: Music, space textures, final check** (2026-10-11). The conto is finished.
+  - Music (family A "darksynth chase", picked by ear on a listening page): `music_1`–`music_4` in
+    `public/assets/music/{pc,mobile}/` as OGG Vorbis + MP3 (PC 192 kbps, mobile 96 kbps; 1.45–1.67 MB / 0.72–0.77
+    MB per file). 32-bar loops (60 s) at 128 BPM, C# tonal centre, all cut at the same bars of one track, so
+    they crossfade note for note. Raw generations, loop masters and every number in `source/music/`
+    (`music.json`).
+  - Music engine `public/game/audio.js` (`Music`: load, start in sync, `setIntensity`, `follow(runSeconds)`
+    with the 5-minute deepening cycle, `unlockAudio`, OGG/MP3 choice) and `MUSIC` in `config.js`. Test page
+    `public/dev/music.html`.
+  - 7 sprites in `public/assets/textures/{pc,mobile}/`: dust_01–04, haze_01–02 (WebP 1024² / 512²),
+    flash_01 (512² / 256²); white RGB, shape in alpha, alpha 0 at the borders. Sources, prompts, seeds and
+    processing in `source/textures/`. `public/game/sprites.js` loads them; `SPRITES` tints in `config.js`.
+  - Final check `docs/checks/conto3_all.jpg`: all 15 meteors re-imported from the PC GLBs (all 30 GLBs
+    re-import as one closed part with the planned triangle counts and texture sizes) and the 7 sprites over the
+    game background.
+  - `/dev/viewer.html` now also shows haze, dust and an explosion flash that lights the rocks, and has a music
+    Play button with a 1 → 4 intensity slider.
+  - Tools: `tools/music_loop.py` (beat grid, seam-matched bar loops, encode + decode check, compare),
+    `tools/make_sprites.py`, `acestep` jobs in `tools/comfy_client.py` / `tools/gen_queue.py`, textures and
+    music in `tools/write_manifest.py`. `public/assets/manifest.json` lists every asset.
 
 ## Next
 
-- **Conto 3: Music, space textures, final check.** Needs ComfyUI (ACE-Step and Z-Image workflows) and Blender.
-- After the push: open `/dev/viewer.html` on the deployed site on your phone and PC.
+- **Contoo 1: Fly.** Runs in the cloud from the repo only (push first). Say "make contoo phase 1".
+- After the push: try `/dev/music.html` and `/dev/viewer.html` on the deployed site on your phone and PC.
 
 ## Decisions
 
@@ -68,6 +88,15 @@
   own 512² / 256² textures (same pixel budget as the planned shared 1024² set, same loading code as the rocks).
 - Tints (sRGB, multiply the gray base): gray `#c8c8c8`, decoy `#efe4b4` → `#f2b81e`, exploder `#f2b414`
   (`public/game/config.js`). The viewer uses Neutral tone mapping: ACES pushed the yellows to orange.
+- Music levels are one track: level 4 from text (ACE-Step with its LM codes), levels 3–1 by audio-to-audio
+  from level 4 (effective denoise 0.67 / 0.89 / 0.89 with calmer tags), so beat grid and harmony match. The
+  first level 3 (denoise 0.80) lost its bass and sounded harsh ("migraine"); the owner's pick is seed 55 at
+  0.67. Four families were made (darksynth, industrial techno, cinematic hybrid, dark synthwave); only A kept.
+- Music cycle (owner): 1 → 4 over 5 minutes, back to 1, each cycle deeper (more mystery and adrenaline, not
+  scary): +1 semitone and tempo per cycle (max +2), more reverb, sub and a C# drone, capped after 3 cycles.
+  Tune in `MUSIC` (`config.js`) with `/dev/music.html`.
+- Sprites: alpha from brightness of Z-Image images on black with a soft radial mask; the flash uses a sum of
+  blurs (bloom) for a peaked core. Rejected candidates are listed in `source/textures/sprites.json`.
 
 ## Notes for Contoo
 
@@ -86,6 +115,8 @@
 - The Cloudflare Worker is assumed to be named `hole` (`wrangler.jsonc`). If the dashboard uses another name,
   change `name` there.
 - Conto steps 2 (TripoSplat grounds) and 3 (Kimodo animations) are skipped: no ground, no characters.
+- Music volume is quiet on purpose (loops at −20 … −16 dB RMS, `MUSIC.volume` 0.8) to leave room for the
+  sounds; set it in Contoo 3.
 
 ## Assets
 
@@ -93,6 +124,9 @@
   potato, rock_02 elongated, rock_03 flat slab, rock_04 angular chunk, rock_05 twin-lobed, rock_06 cratered,
   rock_07 jagged shard, rock_08 pitted, big_01 huge cratered boulder, big_02 long curved giant, big_03 lumpy
   giant, frag_01–04 explosion fragments (from rock_04).
+- Sprites (`public/assets/textures/`): dust_01 irregular patch, dust_02 diffuse spray, dust_03 diagonal drift,
+  dust_04 tangled cloud, haze_01 lumpy puff, haze_02 smooth fog bank, flash_01 explosion glow.
+- Music (`public/assets/music/`): music_1 calm (beatless) → music_4 full adrenaline, darksynth.
 
 ## Usage log
 
@@ -101,3 +135,4 @@
 | Setup | 2026-10-11 | n/a | Planning session |
 | Conto 1 | 2026-10-11 | (to ask) | ~3 h wall clock, mostly unattended GPU queues; 60 Z-Image images, 18 Pixal3D runs |
 | Conto 2 | 2026-10-11 | (to ask) | ~1 h 10 min wall clock, no GPU; full build of 11 rocks ~11 min, fragments ~2 min, check sheet ~1 min |
+| Conto 3 | 2026-10-11 | (to ask) | ~2 h 30 min wall clock incl. listening; 6 ACE-Step text tracks (~4.3 min each), ~60 audio-to-audio (10–25 s), 24 Z-Image sprites |

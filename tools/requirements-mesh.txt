@@ -1,7 +1,9 @@
-# Python packages for tools/mesh_tool.py (called by tools/blender_meteors.py through HOLE_TOOLS_PY).
+# Python packages for tools/mesh_tool.py (called by tools/blender_meteors.py through HOLE_TOOLS_PY) and
+# tools/make_sprites.py.
 # Laptop setup: python -m venv %USERPROFILE%\Documents\HoleWork\venv
 #               %USERPROFILE%\Documents\HoleWork\venv\Scripts\python.exe -m pip install -r tools/requirements-mesh.txt
 numpy==2.5.4
 scipy==1.18.1
 scikit-image==0.26.0
 pymeshlab==2025.7.post1
+pillow==12.3.0

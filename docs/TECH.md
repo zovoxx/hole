@@ -27,6 +27,7 @@ something works better, and update this file when you do. All numbers are starti
 | `flight.js` | Circle, turning momentum, forward speed, gravity drift on the player |
 | `world.js` | Floating origin, spawning and recycling meteors around the player |
 | `meteors.js` | Meteor types, instanced rendering, tint/crack/pulse shader, fuses, explosions, fragments |
+| `sprites.js` | Loads the dust / haze / flash sprite textures from the manifest; sprite materials (tint, normal or additive) |
 | `gravity.js` | Big/massive pull on meteors and on the player, swarms, escape gaps |
 | `walls.js` | Wall timing, layout, hole placement and reachability check |
 | `difficulty.js` | The single difficulty curve and every value derived from it |
@@ -132,11 +133,27 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 
 ## Audio
 
-- Unlock the `AudioContext` on the first tap/click/key (required on iOS).
-- Music is required: 4 intensity loops (same key, tempo and bar length). All 4 start at the same moment as
-  looping `AudioBufferSourceNode`s (`loopStart`/`loopEnd` from the manifest avoids MP3 padding gaps), each
-  with its own gain. Difficulty `D` maps to a level 1→4; gains follow an equal-power crossfade that moves
-  slowly (several seconds), so the music only ever gets more intense, never switches audibly.
+- Unlock the `AudioContext` on the first tap/click/key (required on iOS): `unlockAudio(ctx)` in `audio.js`.
+- Music is required: 4 intensity loops (same key, tempo and bar length). `Music` in `audio.js` (written in
+  Conto 3, tested in `/dev/viewer.html`) starts all 4 at the same moment as looping `AudioBufferSourceNode`s
+  playing `loopStart`..`loopEnd`, each with its own gain, into a gentle limiter. `setIntensity(x)` takes a
+  continuous level x in 1..4; only the two neighbouring loops sound, with a constant-power crossfade that
+  moves slowly (`MUSIC.fadeSeconds` in `config.js`), so changes are never heard as a switch. OGG (Vorbis)
+  where the browser plays it, else MP3 (Safari).
+- Music cycle (the owner's rule): the game calls `music.follow(runSeconds, MUSIC)` every frame. Level climbs
+  1 → 4 over `MUSIC.cycleSeconds` (300 s), then drops back to 1 on a bar line and the next cycle is one step
+  deeper (`MUSIC.depth`, capped at depth 3): key and tempo up a semitone at the drop (up to +2, 128 → 143.7
+  BPM; `playbackRate` on all loops, so they stay in sync), more reverb (generated impulse), more sub (low
+  shelf), and a quiet breathing drone on the tonal centre (C#2; the loops measure as C#, not the requested D
+  minor). Try it on `/dev/music.html` (speed 1×/10×/30×, skip to a cycle end, effects on/off).
+- Every music file holds its loop plus 0.25 s of cyclic padding on both sides (the loop's end before it, its
+  start after it). Whatever offset a decoder adds (MP3 encoder delay that one browser trims and another
+  doesn't) only shifts the window inside cyclic audio, so the loop stays seamless and the 4 levels stay in
+  sync (they shift together).
+- The 4 levels are one track: level 4 was generated from text, levels 3, 2, 1 from level 4 by ACE-Step
+  audio-to-audio with rising denoise and calmer tags, so they keep its beat grid and harmony and a crossfade
+  sounds like layers coming and going. `rhoNext` in the manifest is how alike a loop is to the next level;
+  the crossfade divides by `sqrt(1 + rhoNext·sin 2θ)` so similar loops don't get louder in the middle.
 - Sounds are synthesized, no files: whoosh = band-passed noise sweep panned to the passing side; rumble =
   low-passed brown noise plus a 30–50 Hz tone, gain from pull; boom = noise burst plus a falling low tone,
   volume from distance.
@@ -174,6 +191,14 @@ All runtime files live in `public/assets/`. File names are lowercase, no spaces.
 - Every file is far below the 25 MiB limit; the meteor set is 5.7 MiB (PC) and 2.2 MiB (mobile).
 - How they are made: `tools/blender_meteors.py` (see its docstring), mesh repair/decimation in
   `tools/mesh_tool.py`, manifest by `tools/write_manifest.py`, check sheet `docs/checks/conto2_meteors.jpg`.
+- Sprites: WebP with alpha, square, white RGB with the shape in alpha (brightness of a Z-Image Turbo image on
+  black, with a soft radial edge mask, so no square border can show). The game tints them with the material
+  colour (`SPRITES` in `config.js`): dust and haze blend normally, the flash is additive. Made by
+  `tools/make_sprites.py`; prompts, seeds and processing in `source/textures/sprites.json`.
+- Music: 32-bar loops at 128 BPM with a C# tonal centre (60 s), 48 kHz stereo, OGG Vorbis + MP3 per set, with 0.25 s of
+  cyclic padding (see Audio). Made by `tools/comfy_client.py` / `tools/gen_queue.py` (`acestep` jobs) and
+  `tools/music_loop.py` (beat grid, loop window with the smallest seam, crossfaded loop closure, resampling to
+  exactly 32 bars, loudness per level, encoding and decode check); details in `source/music/music.json`.
 
 ## Asset manifest (`public/assets/manifest.json`)
 
@@ -195,15 +220,17 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
     ]
   },
   "textures": {
-    "dust": [ { "id": "dust_01", "pc": "textures/pc/dust_01.webp", "mobile": "textures/mobile/dust_01.webp" } ],
-    "haze": [ { "id": "haze_01", "pc": "textures/pc/haze_01.webp", "mobile": "textures/mobile/haze_01.webp" } ],
-    "flash": [ { "id": "flash_01", "pc": "textures/pc/flash_01.webp", "mobile": "textures/mobile/flash_01.webp" } ]
+    "dust": [ { "id": "dust_01", "pc": "textures/pc/dust_01.webp", "mobile": "textures/mobile/dust_01.webp",
+                "size": { "pc": 1024, "mobile": 512 }, "bytes": { "pc": 90000, "mobile": 30000 } } ],
+    "haze": [ "... same fields" ],
+    "flash": [ "... same fields" ]
   },
   "music": [
-    { "id": "music_1", "level": 1, "bpm": 128,
+    { "id": "music_1", "level": 1, "bpm": 128, "bars": 32, "beatsPerBar": 4, "key": "C#",
       "pc": { "ogg": "music/pc/music_1.ogg", "mp3": "music/pc/music_1.mp3" },
       "mobile": { "ogg": "music/mobile/music_1.ogg", "mp3": "music/mobile/music_1.mp3" },
-      "loopStart": 0.0, "loopEnd": 60.0 }
+      "loopStart": 0.25, "loopEnd": 60.25, "rhoNext": 0.42,
+      "bytes": { "pc": { "ogg": 1300000, "mp3": 1450000 }, "mobile": { "ogg": 700000, "mp3": 730000 } } }
   ]
 }
 ```
@@ -211,8 +238,9 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
 - `collisionRadius`: one sphere at the origin with ≥ 92% of its volume inside the rock. `collisionSpheres`:
   `[x, y, z, r]` (GLB units, glTF axes), greedy set of spheres 5% under the surface covering most of the
   volume. Both scale with the instance. `sizeInRock`: a fragment's radius relative to its source rock.
-- `tools/write_manifest.py` rewrites the `meteors` section from the GLBs and `source/meteors/meteors.json`
-  and keeps `textures` and `music` as they are.
+- `tools/write_manifest.py` rewrites the whole manifest: `meteors` from the GLBs and
+  `source/meteors/meteors.json`, `textures` from the WebPs in `public/assets/textures/`, `music` from
+  `source/music/music.json` and the files in `public/assets/music/`.
 
 ## Local checks
 

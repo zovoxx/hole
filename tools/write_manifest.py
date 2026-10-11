@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Writes the meteor part of public/assets/manifest.json from the exported GLBs.
+"""Writes public/assets/manifest.json from the exported files.
 
-Reads public/assets/meteors/{pc,mobile}/<id>.glb (triangle counts, sizes, texture sizes from the GLB itself) and
-source/meteors/meteors.json (collision numbers written by tools/blender_meteors.py). Other manifest sections
-(textures, music) are kept as they are, so later conto phases can add theirs.
+meteors   public/assets/meteors/{pc,mobile}/<id>.glb (triangle counts, sizes, texture sizes from the GLB itself)
+          and source/meteors/meteors.json (collision numbers written by tools/blender_meteors.py).
+textures  every public/assets/textures/pc/{dust,haze,flash}_*.webp with its mobile twin (sizes from the files).
+music     source/music/music.json (written in Conto 3: level, loop points, rhoNext per loop; see
+          tools/music_loop.py) and the files in public/assets/music/{pc,mobile}/.
+A section whose sources don't exist yet is kept as it is in the manifest.
 
 Usage: python tools/write_manifest.py [--check]
   --check  only compare: exit 1 if the manifest on disk differs from what would be written.
@@ -18,6 +21,8 @@ ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "public" / "assets"
 MANIFEST = ASSETS / "manifest.json"
 INFO = ROOT / "source" / "meteors" / "meteors.json"
+MUSIC_INFO = ROOT / "source" / "music" / "music.json"
+SPRITE_KINDS = ("dust", "haze", "flash")
 GROUPS = {"small": [f"rock_{i:02d}" for i in range(1, 9)],
           "big": [f"big_{i:02d}" for i in range(1, 4)],
           "fragments": [f"frag_{i:02d}" for i in range(1, 5)]}
@@ -93,10 +98,44 @@ def build():
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8")) if MANIFEST.is_file() else {}
     out = {"version": 1,
            "notes": "Paths are relative to this file. Meteor GLBs: glTF +Y up, centered, bounding radius 1. "
-                    "collisionSpheres: [x, y, z, r] in the same units; collisionRadius: one sphere at the origin.",
+                    "collisionSpheres: [x, y, z, r] in the same units; collisionRadius: one sphere at the origin. "
+                    "Sprites: white RGB, the shape is in alpha; tint with the material colour. Music: all loops "
+                    "share bpm, key and bar count; start them together and play loopStart..loopEnd; rhoNext is "
+                    "how alike a loop is to the next level (for a constant-power crossfade).",
            "meteors": meteors,
-           "textures": manifest.get("textures", {"dust": [], "haze": [], "flash": []}),
-           "music": manifest.get("music", [])}
+           "textures": build_textures() or manifest.get("textures", {k: [] for k in SPRITE_KINDS}),
+           "music": build_music() or manifest.get("music", [])}
+    return out
+
+
+def build_textures():
+    pc_dir = ASSETS / "textures" / "pc"
+    if not pc_dir.is_dir():
+        return None
+    out = {k: [] for k in SPRITE_KINDS}
+    for p in sorted(pc_dir.glob("*.webp")):
+        kind = p.stem.split("_")[0]
+        if kind not in out:
+            continue
+        files = {s: f"textures/{s}/{p.name}" for s in SETS}
+        out[kind].append({"id": p.stem, **files,
+                          "size": {s: image_size((ASSETS / files[s]).read_bytes())[0] for s in SETS},
+                          "bytes": {s: (ASSETS / files[s]).stat().st_size for s in SETS}})
+    return out
+
+
+def build_music():
+    if not MUSIC_INFO.is_file():
+        return None
+    info = json.loads(MUSIC_INFO.read_text(encoding="utf-8"))
+    out = []
+    for loop in sorted(info["loops"], key=lambda e: e["level"]):
+        name = loop["id"]
+        files = {s: {f: f"music/{s}/{name}.{f}" for f in ("ogg", "mp3")} for s in SETS}
+        out.append({"id": name, "level": loop["level"], "bpm": info["bpm"], "bars": info["bars"],
+                    "beatsPerBar": info["beats_per_bar"], "key": info["key"], **files,
+                    "loopStart": loop["loopStart"], "loopEnd": loop["loopEnd"], "rhoNext": loop.get("rhoNext", 0.0),
+                    "bytes": {s: {f: (ASSETS / files[s][f]).stat().st_size for f in files[s]} for s in SETS}})
     return out
 
 
@@ -113,6 +152,13 @@ def main():
         tris = sum(e["tris"][s] for g in m.values() for e in g)
         mb = sum(e["bytes"][s] for g in m.values() for e in g) / 2**20
         print(f"{s}: {sum(len(g) for g in m.values())} meteors, {tris} tris, {mb:.2f} MiB")
+        tex = [e for g in out["textures"].values() for e in g]
+        if tex:
+            print(f"{s}: {len(tex)} sprites, {sum(e['bytes'][s] for e in tex) / 2**20:.2f} MiB")
+        if out["music"]:
+            for f in ("ogg", "mp3"):
+                mb = sum(e["bytes"][s][f] for e in out["music"]) / 2**20
+                print(f"{s}: {len(out['music'])} music loops ({f}), {mb:.2f} MiB")
     print(f"wrote {MANIFEST.relative_to(ROOT).as_posix()}")
     return 0
 
