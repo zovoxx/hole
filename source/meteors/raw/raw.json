@@ -1,0 +1,90 @@
+{
+    "rock_01":  {
+                    "concept":  "concepts/rock_01.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  405.4
+                },
+    "rock_02":  {
+                    "concept":  "concepts/rock_02.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  222.2
+                },
+    "rock_03":  {
+                    "concept":  "concepts/rock_03.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  8,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  336.7
+                },
+    "rock_04":  {
+                    "concept":  "concepts/rock_04.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  445.7
+                },
+    "rock_05":  {
+                    "concept":  "concepts/rock_05.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  284.8
+                },
+    "rock_06":  {
+                    "concept":  "concepts/rock_06.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  467.6
+                },
+    "rock_07":  {
+                    "concept":  "concepts/rock_07.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  260.4
+                },
+    "rock_08":  {
+                    "concept":  "concepts/rock_08.png",
+                    "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                    "seed":  7,
+                    "faces":  200000,
+                    "texture":  2048,
+                    "seconds":  478.0
+                },
+    "big_01":  {
+                   "concept":  "concepts/big_01.png",
+                   "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                   "seed":  8,
+                   "faces":  200000,
+                   "texture":  2048,
+                   "seconds":  564.8
+               },
+    "big_02":  {
+                   "concept":  "concepts/big_02.png",
+                   "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                   "seed":  7,
+                   "faces":  200000,
+                   "texture":  2048,
+                   "seconds":  276.5
+               },
+    "big_03":  {
+                   "concept":  "concepts/big_03.png",
+                   "model":  "Pixal3D (tools/workflows/pixal3d.json)",
+                   "seed":  7,
+                   "faces":  200000,
+                   "texture":  2048,
+                   "seconds":  546.9
+               }
+}

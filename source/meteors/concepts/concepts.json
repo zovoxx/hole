@@ -1,0 +1,79 @@
+{
+    "rock_01":  {
+                    "candidate":  "rock_01_v2_s22",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  22,
+                    "prompt":  "A lumpy, lopsided, potato-shaped space rock, a bit longer than it is wide, with soft uneven bulges and a dented outline. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_02":  {
+                    "candidate":  "rock_02_s33",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  33,
+                    "prompt":  "A long, elongated space rock shaped like a stretched cigar, about three times longer than it is wide, lying horizontally. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_03":  {
+                    "candidate":  "rock_03_s33",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  33,
+                    "prompt":  "A flat, thin slab of space rock like a broken stone tablet with uneven chipped edges, tilted toward the viewer so its thickness is visible. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_04":  {
+                    "candidate":  "rock_04_s33",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  33,
+                    "prompt":  "A blocky, angular chunk of space rock with large flat broken faces and sharp edges. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_05":  {
+                    "candidate":  "rock_05_s11",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  11,
+                    "prompt":  "A twin-lobed space rock made of two rounded lumps fused together like a peanut, lying horizontally. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_06":  {
+                    "candidate":  "rock_06_v2_s22",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  22,
+                    "prompt":  "An irregular, oval, lopsided space rock with an uneven lumpy outline and three large, deep, round impact craters. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_07":  {
+                    "candidate":  "rock_07_v2_s22",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  22,
+                    "prompt":  "A jagged, sharp-edged shard of broken space rock with several pointed corners and fractured flat faces, like a broken arrowhead of stone. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "rock_08":  {
+                    "candidate":  "rock_08_v2_s22",
+                    "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                    "size":  "1024x1024",
+                    "seed":  22,
+                    "prompt":  "A knobbly, irregular, kidney-shaped space rock with a pockmarked surface covered in many small shallow pits. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+                },
+    "big_01":  {
+                   "candidate":  "big_01_s22",
+                   "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                   "size":  "1024x1024",
+                   "seed":  22,
+                   "prompt":  "A huge, massive, roughly spherical asteroid boulder with a few very large, deep impact craters. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+               },
+    "big_02":  {
+                   "candidate":  "big_02_s22",
+                   "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                   "size":  "1024x1024",
+                   "seed":  22,
+                   "prompt":  "A giant, long, heavy asteroid with a curved, slightly bent body and rounded ends, lying horizontally. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+               },
+    "big_03":  {
+                   "candidate":  "big_03_v2_s11",
+                   "model":  "Z-Image Turbo (tools/workflows/z_image_turbo.json)",
+                   "size":  "1024x1024",
+                   "seed":  11,
+                   "prompt":  "A giant irregular asteroid with a heavily lumpy, knobbly outline, big rounded bulges blending smoothly into one solid mass of stone. Stylized 3D game asset of a single asteroid floating in mid-air, clean smooth sculpted stone surface, matte neutral gray stone with no color, the whole rock fully visible and centered with empty space around it, plain flat white background, soft even studio lighting, no ground, no cast shadow, no text."
+               }
+}

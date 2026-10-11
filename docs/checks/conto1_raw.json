@@ -1,0 +1,310 @@
+[
+ {
+  "tris": 199906,
+  "verts_welded": 99846,
+  "parts": 1,
+  "tunnels_est": 25,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 0,
+  "boundary_len": 0.0,
+  "nonmanifold_edges": 59,
+  "extents": [
+   0.881,
+   0.873,
+   0.822
+  ],
+  "label": "rock_01",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_01.glb",
+  "file_mb": 14.42,
+  "size_m": [
+   0.873,
+   0.865,
+   0.814
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 3.6
+ },
+ {
+  "tris": 199262,
+  "verts_welded": 99058,
+  "parts": 2,
+  "tunnels_est": 106,
+  "main_part": 0.9999,
+  "parts_over_1pct": 1,
+  "boundary_edges": 63,
+  "boundary_len": 0.148,
+  "nonmanifold_edges": 406,
+  "extents": [
+   0.973,
+   0.467,
+   0.438
+  ],
+  "label": "rock_02",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_02.glb",
+  "file_mb": 14.76,
+  "size_m": [
+   0.933,
+   0.448,
+   0.42
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 3.0
+ },
+ {
+  "tris": 199970,
+  "verts_welded": 99972,
+  "parts": 1,
+  "tunnels_est": 3,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 0,
+  "boundary_len": 0.0,
+  "nonmanifold_edges": 9,
+  "extents": [
+   0.924,
+   0.893,
+   0.587
+  ],
+  "label": "rock_03",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_03.glb",
+  "file_mb": 13.47,
+  "size_m": [
+   0.909,
+   0.879,
+   0.578
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 3.7
+ },
+ {
+  "tris": 199445,
+  "verts_welded": 99405,
+  "parts": 1,
+  "tunnels_est": 88,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 16,
+  "boundary_len": 0.051,
+  "nonmanifold_edges": 152,
+  "extents": [
+   0.941,
+   0.914,
+   0.886
+  ],
+  "label": "rock_04",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_04.glb",
+  "file_mb": 16.33,
+  "size_m": [
+   0.877,
+   0.852,
+   0.826
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 5.2
+ },
+ {
+  "tris": 199902,
+  "verts_welded": 99773,
+  "parts": 1,
+  "tunnels_est": 70,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 0,
+  "boundary_len": 0.0,
+  "nonmanifold_edges": 41,
+  "extents": [
+   0.923,
+   0.691,
+   0.565
+  ],
+  "label": "rock_05",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_05.glb",
+  "file_mb": 16.9,
+  "size_m": [
+   0.926,
+   0.694,
+   0.567
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.3
+ },
+ {
+  "tris": 199890,
+  "verts_welded": 99847,
+  "parts": 1,
+  "tunnels_est": 0,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 6,
+  "boundary_len": 0.015,
+  "nonmanifold_edges": 103,
+  "extents": [
+   0.939,
+   0.817,
+   0.772
+  ],
+  "label": "rock_06",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_06.glb",
+  "file_mb": 15.68,
+  "size_m": [
+   0.994,
+   0.865,
+   0.817
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.6
+ },
+ {
+  "tris": 198397,
+  "verts_welded": 97939,
+  "parts": 2,
+  "tunnels_est": 252,
+  "main_part": 0.9999,
+  "parts_over_1pct": 1,
+  "boundary_edges": 15,
+  "boundary_len": 0.057,
+  "nonmanifold_edges": 782,
+  "extents": [
+   0.943,
+   0.596,
+   0.55
+  ],
+  "label": "rock_07",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_07.glb",
+  "file_mb": 16.54,
+  "size_m": [
+   0.927,
+   0.586,
+   0.541
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.1
+ },
+ {
+  "tris": 199674,
+  "verts_welded": 99639,
+  "parts": 1,
+  "tunnels_est": 54,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 0,
+  "boundary_len": 0.0,
+  "nonmanifold_edges": 92,
+  "extents": [
+   0.888,
+   0.884,
+   0.867
+  ],
+  "label": "rock_08",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\rock_08.glb",
+  "file_mb": 17.89,
+  "size_m": [
+   0.884,
+   0.88,
+   0.863
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.7
+ },
+ {
+  "tris": 199695,
+  "verts_welded": 99702,
+  "parts": 1,
+  "tunnels_est": 42,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 2,
+  "boundary_len": 0.01,
+  "nonmanifold_edges": 66,
+  "extents": [
+   0.971,
+   0.964,
+   0.957
+  ],
+  "label": "big_01",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\big_01.glb",
+  "file_mb": 16.73,
+  "size_m": [
+   0.874,
+   0.868,
+   0.862
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 5.1
+ },
+ {
+  "tris": 199865,
+  "verts_welded": 99746,
+  "parts": 1,
+  "tunnels_est": 76,
+  "main_part": 1.0,
+  "parts_over_1pct": 1,
+  "boundary_edges": 5,
+  "boundary_len": 0.015,
+  "nonmanifold_edges": 38,
+  "extents": [
+   0.815,
+   0.682,
+   0.493
+  ],
+  "label": "big_02",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\big_02.glb",
+  "file_mb": 15.95,
+  "size_m": [
+   0.91,
+   0.762,
+   0.551
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.0
+ },
+ {
+  "tris": 199798,
+  "verts_welded": 99820,
+  "parts": 4,
+  "tunnels_est": 24,
+  "main_part": 0.9976,
+  "parts_over_1pct": 1,
+  "boundary_edges": 0,
+  "boundary_len": 0.0,
+  "nonmanifold_edges": 39,
+  "extents": [
+   0.95,
+   0.874,
+   0.866
+  ],
+  "label": "big_03",
+  "file": "C:\\Users\\zovox\\Documents\\GitHub\\hole\\source\\meteors\\raw\\big_03.glb",
+  "file_mb": 17.89,
+  "size_m": [
+   0.927,
+   0.853,
+   0.845
+  ],
+  "textures": [
+   "2048x2048"
+  ],
+  "seconds": 4.7
+ }
+]

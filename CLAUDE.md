@@ -50,6 +50,14 @@ go in a permanent folder (`%USERPROFILE%\Documents\HoleWork\`), never in Temp.
 - Pixal3D meshes often have tiny holes. For low-poly versions: remesh first, then decimate, then bake textures
   from the high-poly model.
 - Look at check renders of every asset before calling it done.
+- Z-Image Turbo barely changes the composition between seeds: get variety from explicit shape words in the
+  prompt, not from more seeds. Say "floating in mid-air, no ground, no cast shadow" or rocks sit on a floor.
+- Pixal3D guesses depth from one view: a flat slab seen from above came back as a thick boulder. Pick concepts
+  that show the thin side, and check the extents in the `blender_check.py` report.
+- Timings on the laptop: Z-Image ~20 s per 1024² image; Pixal3D ~4–7 min per model (200k faces, 2048
+  textures); `blender_check.py` ~10 s per model.
+- Laptop tools: `git` is GitHub Desktop's bundled one (`%LOCALAPPDATA%\GitHubDesktop\app-*\resources\app\git\cmd\git.exe`,
+  not on PATH). System Python has no numpy/Pillow, so image work runs in Blender's Python (`blender -b -P`).
 
 ## Folder layout
 
