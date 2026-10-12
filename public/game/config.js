@@ -68,6 +68,13 @@ export const DIFFICULTY = {
   slowSeconds: 180,
   speed: [40, 70],      // m/s forward
   pathGap: [12, 3],     // seconds between rocks in your path if you flew straight (sets the meteor density)
+  // Contoo 2: the danger knobs (DESIGN §11). Shares are of the small rocks; spawned rocks keep what they got.
+  decoyShare: [0.12, 0.18],
+  exploderShare: [0.008, 0.016],
+  decoyCloseness: [0, 0.6],   // how far the deep end of the decoys has moved from decoyDeep to the exploder colour
+  decoyDeepBias: [1.4, 3],    // shade = 1 - (1 - u)^bias: higher = more decoys near the deep (exploder-like) end
+  massiveGap: [45, 16],       // s between massive meteors put near your path
+  pull: [0.75, 0.9],          // strength of a massive meteor's pull on you (at 0.9 holding against it still wins)
 };
 
 // World around the player (floating origin: the player stays at 0,0,0 and space moves).
@@ -80,7 +87,7 @@ export const WORLD = {
   keepMargin: 15,       // deg past the view's corners where space is kept full; meteors further round are dropped
   maxMeteors: 3000,     // performance cap; past it new rocks spawn bigger instead of more (same on PC and mobile)
   small: { radius: [4, 11] },            // m, log-uniform
-  big: { share: 0.04, radius: [14, 30] }, // share of the count; the big shapes (plain gray until Contoo 2)
+  big: { share: 0.04, radius: [14, 30] }, // share of the count; the big shapes (massive meteors use them too)
   drift: 0.3,           // max own speed, as a share of the player's speed (meteors never overtake you)
   spin: [0.05, 0.6],    // rad/s, log-uniform (big rocks spin at 30%)
   grayJitter: 0.05,     // ± brightness variation of the gray tint
@@ -121,4 +128,67 @@ export const RUN = {
   restartLock: 0.45,    // s after the game-over screen appears before a tap/key restarts (panic taps)
   openSeconds: 0.5,     // the view opening again at a restart
   bestKey: 'hole.best',
+};
+
+// ---- Contoo 2: danger (DESIGN §6–7, TECH "Gravity, swarms and escape gaps")
+
+// The tell: how much of an exploder's cracks and pulse and a massive meteor's dust ring shows, by distance
+// (1 nearer than `near`, 0 past `far`, (1 - smoothstep)^power in between: faint at mid distance).
+export const TELL = { near: 50, far: 150, power: 3 };
+
+// Exploders. The fuse starts when one is in view, within `lateral` m of your heading and fuseSeconds + leadSeconds
+// of flight ahead (150 m at 40 m/s), so it blows up ~leadSeconds ahead of you (70 m at 40 m/s). A share of them
+// light a fuse on their own far away (farFuse m), so the player learns they exist.
+export const EXPLODER = {
+  fuseSeconds: 2,
+  leadSeconds: 1.75,
+  lateral: 70,
+  farShare: [0.15, 0.05],     // over difficulty
+  farFuse: [200, 265],
+  crackColor: '#ff9a2e',
+  crackScale: 2.3,            // Voronoi cells per rock radius
+  crackWidth: 0.075,
+  crackRest: 1.1,             // crack glow at rest (times the tell)
+  crackFuse: 2.6,             // crack glow at the end of the fuse (shows through the distance a little)
+  pulseHz: [0.6, 7],          // pulse at rest -> at the end of the fuse
+};
+
+// Explosions: 6–12 pieces (the fragment meshes) that hit like rocks and feel gravity; a flash of light that
+// lights the rocks around it (never the whole screen) and a glow sprite at the explosion; a camera kick.
+export const EXPLOSION = {
+  pieces: [6, 12],
+  pieceSize: [0.55, 0.9],     // times the size that keeps the rock's volume
+  pieceSpeed: [16, 38],       // m/s away from the explosion
+  pieceSpin: [0.8, 3],        // rad/s
+  aimed: [1, 2],              // pieces sent toward you (when it is ahead of you)
+  aimMiss: [0.5, 7],          // m: how far beside you an aimed piece would pass if you don't steer
+  flashSeconds: 0.9,
+  light: 9000,                // candela at the peak (point light, decay 2)
+  lightRange: 150,            // m
+  glow: 5,                    // glow sprite size, times the rock radius
+  glowGain: 3.5,              // glow brightness (the flash texture's halo is faint; the core saturates)
+  glowMaxView: 0.35,          // glow at most this share of its distance across (never a full-screen flash)
+  kickDegrees: 2.6,
+  kickSeconds: 0.5,
+  kickRange: 230,             // m: no kick from further away
+};
+
+// Gravity. Only big and massive meteors pull. On meteors: mu = GM from the orbit period at 2.5 radii, within
+// `range` radii; its own moons / swarm feel all of it, other meteors `fieldPull` of it (full strength, the slow
+// drifting field fell into the big rocks by the hundred). On you (massive only): s = ((range - d) / (range -
+// radius))^power, a turn toward it of up to turnMax °/s and a sideways drift of up to drift m/s, both times
+// sin(angle off your heading) and `pull`.
+export const GRAVITY = {
+  big: { period: 20, range: 3.5, fieldPull: 0.15, members: [3, 6], orbit: [1.7, 2.8], memberSize: [2, 4.5] },
+  massive: { period: 16, range: 6, fieldPull: 0.6, members: [9, 15], orbit: [1.8, 3.6], memberSize: [2.5, 7],
+             slingshot: 0.25,
+             radius: [16, 30], offAxis: [3, 13] },   // deg off your heading when it is put near your path
+  absorb: 0.7,                // a meteor this deep inside a massive one (share of its radius) is hidden: dropped
+  player: { range: [90, 4], turnMax: 200, drift: 20, power: 1.5, driftSeconds: 0.35, behind: [-0.5, 0] },
+  ring: { points: { pc: 3000, mobile: 1500 }, radius: [1.45, 2.7], thickness: 0.05, size: [0.12, 0.5],
+          puffs: 0.12, puffSize: [3, 7], puffAlpha: 0.1, color: '#cfc3a6', opacity: 0.6, period: 18 },
+  // Escape rule: a porous sheet of extra meteors on the side away from the massive meteor, just in front of it,
+  // with 1–2 clear holes (holeRadius m plus the rock's own radius) you can steer through.
+  escape: { spacing: 21, lateral: [6, 135], across: 95, depth: 12, holes: [1, 2], holeRadius: 15,
+            holeAt: [24, 80], size: [4, 9] },
 };

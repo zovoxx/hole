@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Browser tests for the game (Contoo 1): serves public/ on a local port and drives headless Chromium with
+// Browser tests for the game (Contoo 1–2): serves public/ on a local port and drives headless Chromium with
 // Playwright on desktop and mobile emulation (touch, portrait and landscape).
 //   - loads with no console errors and no failed requests (404s)
 //   - desktop: a key starts the run; WASD moves the circle at one constant speed and it stays put; the turn is
@@ -7,6 +7,8 @@
 //     screen shows the time and best time; a key restarts
 //   - mobile: tap to start; two thumbs at once give a diagonal; a fast double tap on a button and on empty
 //     screen never zooms (visualViewport.scale stays 1)
+//   - Contoo 2 (desktop): the field has decoys, exploders and big rocks; nothing blows up behind the start
+//     screen; an exploder ahead lights its fuse and blows up (flash, pieces); a massive meteor pulls you
 // Usage: NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]
 // Needs Playwright (npm i -g playwright, or npx playwright install chromium on a laptop).
 import http from 'node:http';
@@ -99,6 +101,9 @@ async function desktop(browser, base) {
   await shot(page, 'desktop_start');
   let g = await game(page);
   check(g.alive > 100, 'space is full on the start screen', `${g.alive} meteors, ${g.drawn} drawn, target ${g.target}`);
+  const calm = await page.evaluate(() => ({ booms: hole.field.stats.explosions, types: { ...hole.field.stats.types } }));
+  check(calm.booms === 0 && calm.types.decoy > 10 && calm.types.big > 3,
+    'the start screen shows decoys and big rocks, and nothing blows up behind it', JSON.stringify(calm));
   await page.click('#start .fs');
   await sleep(300);
   const fs1 = await page.evaluate(() => ({ mode: hole.mode, fs: !!document.fullscreenElement }));
@@ -187,9 +192,39 @@ async function desktop(browser, base) {
   g = await game(page);
   check(g.mode === 'run' && Math.abs(g.time - 3) < 0.02, 'the timer counts the run', `t ${g.time.toFixed(2)}`);
   await shot(page, 'desktop_restart');
+  // Contoo 2: an exploder ahead (its pieces can't hit in this test) lights its fuse and blows up; a massive
+  // meteor beside your path pulls you
+  const boom = await page.evaluate(() => {
+    const before = { ...hole.field.stats };
+    const ex = hole.place({ type: 'exploder', dist: 155, s: 6, side: 3, test: false });
+    let lit = null;
+    for (let i = 0; i < 240 && hole.field.stats.explosions === before.explosions; i++) {
+      hole.advance(1 / 60);
+      if (lit === null && ex.fuse >= 0) lit = Math.round(ex.p.length());
+    }
+    return { lit, booms: hole.field.stats.explosions - before.explosions, pieces: hole.field.stats.fragments - before.fragments,
+             flashes: hole.fx.flashes.length, light: hole.fx.lights.some((l) => l.light.intensity > 0) };
+  });
+  check(boom.lit > 100 && boom.booms >= 1 && boom.pieces >= 6 && boom.flashes >= 1 && boom.light,
+    'an exploder ahead lights its fuse and blows up: flash, light, pieces', JSON.stringify(boom));
+  await shot(page, 'desktop_blast');
+  const pulled = await page.evaluate(() => {
+    const m = hole.spawnMassive({ dist: 120, offAxis: 25, s: 22 });
+    hole.advance(0.5);
+    const out = { strength: hole.pull.strength, turn: Math.hypot(hole.pull.gx, hole.pull.gy), drift: hole.drift.length() };
+    hole.field.remove(m);
+    for (const r of [...hole.field.rocks]) if (r.host === m || r.noGrav) hole.field.remove(r);
+    hole.advance(0.5);
+    return out;
+  });
+  check(pulled.strength > 0.1 && pulled.turn > 5 && pulled.drift > 0.3, 'a massive meteor near you turns you toward it and drags you sideways',
+    `${pulled.turn.toFixed(0)} °/s, drift ${pulled.drift.toFixed(1)} m/s`);
+  g = await game(page);
+  check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
   // the real clock runs too (after a screenshot the software GPU first works off its backlog)
+  const tNow = await page.evaluate(() => hole.time);
   await page.evaluate(() => hole.realtime());
-  const ran = await page.waitForFunction(() => hole.time > 4.5, null, { timeout: 30000 }).then(() => true, () => false);
+  const ran = await page.waitForFunction((t) => hole.time > t + 1.5, tNow, { timeout: 30000 }).then(() => true, () => false);
   g = await game(page);
   check(ran, 'the real-time clock runs', `t ${g.time.toFixed(2)}`);
   check(problems.length === 0, 'no console errors or failed requests', problems.slice(0, 5).join(' | '));

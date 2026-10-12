@@ -84,13 +84,46 @@
     Android, iPad; keys, two thumbs, rotation, fullscreen button, hit → game over → restart, double taps never
     zoom, no console errors or 404s). All pass. Screenshots: `docs/checks/contoo1_screens.jpg`.
 
+- **Contoo 2: Danger** (2026-10-12). Every meteor type, the doubt from distance, exploders, explosions,
+  gravity, massive meteors with their swarms and escape gaps.
+  - Types at spawn (`world.js`): gray rocks; decoys pale → deep yellow (12% → 18% of the small rocks; later in
+    a run more of them sit at the deep end and the deep end moves toward the exploder colour); exploders, the
+    deepest yellow (0.8% → 1.6%: the count is large, so that is one near your path every ~10 s at the start);
+    big rocks (4%) with 3–6 small moons circling them; massive meteors put near your path every 45 → 16 s (first
+    after 20–34 s), the same big shapes and sizes, so from far they look like a big rock.
+  - The tell (`meteors.js`): exploders get glowing procedural cracks (3D Voronoi, some borders dark) and a
+    faint pulse, massive meteors a dust ring (fine grains plus faint puffs); both scale with
+    (1 − smoothstep(50, 150 m))³: nothing past 150 m, faint at 100 m, clear inside 50 m. The fog does the rest.
+  - Fuses: light when an exploder is in view within 70 m of your path and 3.75 s of flight ahead; it blows up
+    1.75 s ahead of you (150 m → 70 m at 40 m/s, 262 m → 120 m at 70 m/s), the pulse speeding up 0.6 → 7 Hz and
+    the cracks flaring. 15% → 5% of exploders blow up on their own far away (200–265 m).
+  - Explosions: 6–12 hot pieces (the fragment meshes) that hit like rocks and feel gravity; 1–2 aimed at where
+    you'll be (missing by 0.5–7 m): flying on, ~40% of runs get hit, turning away 0.3 s after the flash ~5%. No
+    pieces from an explosion you can't see. Flash: two pooled point lights light the rocks around it, a glow
+    sprite at the blast capped by distance (never full-screen), a 0.5 s camera kick by distance (`fx.js`).
+  - Gravity (`gravity.js`): big rocks pull meteors (moons fully, the field weakly), massive meteors pull
+    meteors (swarm of 9–15, a quarter slingshots) and you: a turn toward it (up to 200 °/s × strength × sin of
+    the angle) and a sideways drag, growing as you close in, letting go once it is behind you; capped so holding
+    against it always wins. Do nothing and you hit it (39–40 of 40 in the tests).
+  - Escape rule: a porous sheet of extra rocks on the far side from the massive meteor, with 1–2 clear 15 m
+    holes placed outside its swarm; decided when it spawns (beyond the far edge, so nothing pops in), moving
+    with it. Steering through a hole gets out 39–40 of 40 times, at the start and ten minutes in (test pilot).
+  - Performance: gravity through a 100 m grid, weak pulls every third frame: field update ~1 ms a frame at full
+    difficulty on the dev machine (Contoo 1: 0.2 ms).
+  - Tests: `tools/test_world.mjs` (all of the above, ~1 min) and `tools/test_game.mjs` (new desktop checks:
+    types on the start screen and nothing blowing up there, an exploder ahead blowing up with flash, light and
+    pieces, a massive meteor pulling you) pass. Check sheet `docs/checks/contoo2_danger.jpg` from
+    `tools/check_danger.mjs`.
+
 ## Next
 
-- **Try Contoo 1 on the deployed site** (PHASES Contoo 1 "Done when"): PC (WASD feel, heavy turn), phone in
-  both orientations (two thumbs, fullscreen button; iPhone via Add to Home Screen), fast double taps on
-  Safari and Chrome, and on the iPad several runs in fullscreen in a row: does the warning in the middle still
-  come? Tell me what feels off (control weight, speed, density, darkness).
-- **Contoo 2: Danger.** Say "make contoo phase 2". Meteor types, doubt from distance, explosions, gravity.
+- **Try Contoo 2 on the deployed site** (PHASES Contoo 2 "Done when"), on PC and phone: from far, can you
+  tell an exploder from a deep-yellow decoy, or a massive meteor from a big rock? (You shouldn't.) Up close,
+  are the cracks, pulse and dust ring obvious? Is an exploder blowing up ahead scary but dodgeable? Near a
+  massive meteor, do you drift and turn toward it and have to hold against it, and is there always a way out?
+  Is there too much or too little of anything (explosions, yellow rocks, massive meteors)? Does it stay smooth
+  on your phone? Contoo 1's points still apply (control weight, speed, density, darkness, iPad warning).
+- **Contoo 3: Pressure.** Say "make contoo phase 3". Walls, the full difficulty curve, camera effects, sound.
 
 ## Decisions
 
@@ -131,15 +164,42 @@
 - Sprites: alpha from brightness of Z-Image images on black with a soft radial mask; the flash uses a sum of
   blurs (bloom) for a peaked core. Rejected candidates are listed in `source/textures/sprites.json`.
 
+- Contoo 2 judgement calls (tell me if any is wrong):
+  - The fuse distance follows the speed (it always blows up 1.75 s ahead of you): a fixed 150 m would blow up
+    10 m ahead of you at 70 m/s.
+  - Only exploders near your path light (within 70 m of it); the rest pass by unlit, except the few that blow up
+    far away. Lighting every exploder within 150 m would mean several explosions a second at full difficulty
+    (estimated from the inflow rate).
+  - 1–2 pieces of an explosion near your path are aimed at you (missing by up to 7 m): with pieces flying in
+    random directions, one would head at you only ~1% of the time (estimate), which isn't "pieces fly toward
+    you".
+  - Massive meteors come on a timer near your path (45 s → 16 s), not as a share of the count: a 4% share
+    meant five massive meteors in view at once.
+  - The escape sheet is laid out when the massive meteor appears (far away, fading in), not while you are
+    pulled: spawning rocks then would pop them in close to you.
+  - Big rocks pull other meteors only weakly (15%), their own moons fully; a massive meteor pulls the field at
+    60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
+    direction", never "you can't get out").
+
 ## Notes for Contoo
 
-- Contoo 1 → 2: the field spawns through `MeteorField.spawn()` (one place to give each rock its type, tint,
-  fuse and gravity role at spawn time). `field.render()` writes `instanceColor` per instance: the decoy and
-  exploder tints go there. The fade is extra fog (`aFade`, `meteors.js`); the crack/pulse shader can patch the
-  same material. Explosion fragments are not loaded yet (`loadMeteors(..., { groups: ['small', 'big'] })`).
+- Contoo 2 → 3: walls can be laid out like the escape sheet (`escapeLayout` in `gravity.js`: decided beyond the
+  far edge, moving together, `noGrav`, holes kept clear of new spawns with `inHole`); the reachability check can
+  reuse the test pilot in `tools/test_world.mjs` (`stage()`, `circleTo`). The camera effects go into `fx.js`
+  next to the explosion kick (`fx.kickRotation`); the pull's strength for the rumble, lean, dark edge and stretch
+  is `pull.strength` in `main.js` (0..1) and its screen direction is (`pull.gx`, `pull.gy`). Explosions are in
+  `field.events` each frame (position, size, distance, in view) for the boom; near misses still need a check in
+  `field.update`. "Later combos" (exploders in a wall, a wall next to a massive meteor) can use
+  `spawnMassive()` and `place()`.
+- Contoo 2 tuning knobs (all in `config.js`): `DIFFICULTY.decoyShare / exploderShare / decoyCloseness /
+  decoyDeepBias / massiveGap / pull`, `TELL`, `EXPLODER`, `EXPLOSION`, `GRAVITY`.
+- Contoo 1 → 2 (done): the field spawns through `MeteorField.spawn()`; `field.render()` writes the tint and
+  `aFx` per instance.
 - Performance is unmeasured on real phones (headless tests use a software rasterizer). About 250 rocks are
-  drawn at the start and ~600 at full difficulty (mobile 800 tris each). If a phone stutters: far rocks with
-  fewer triangles, or a lower `WORLD.radius`/pixel ratio (Contoo 4).
+  drawn at the start and ~800 at full difficulty (mobile 800 tris each), plus up to 2 point lights during a
+  flash and the Voronoi cracks on exploders. The field update costs ~1 ms a frame at full difficulty on the dev
+  machine (gravity included). If a phone stutters: far rocks with fewer triangles, fewer moons, gravity on the
+  field every 4th frame, or a lower `WORLD.radius`/pixel ratio (Contoo 4).
 - Collision: `collisionRadius` is one sphere at the origin with ≥ 92% of its volume inside the rock (generous
   for long/flat rocks: rock_02 0.43, rock_03 0.21, big_02 0.28). `collisionSpheres` (up to 12, `[x, y, z, r]`
   in GLB units, glTF axes) sit 5% under the surface and cover 37–71% of the volume; the uncovered part is the
@@ -161,6 +221,11 @@
   a player who skipped it on the start screen can still get in); the game never leaves fullscreen.
 - Music volume is quiet on purpose (loops at −20 … −16 dB RMS, `MUSIC.volume` 0.8) to leave room for the
   sounds; set it in Contoo 3.
+- Contoo 2: how often things blow up is a guess until played. At the start one exploder near your path every
+  ~10 s plus a far one now and then; at full difficulty about one every 1.5 s. Turn `exploderShare` and
+  `EXPLODER.farShare` down if it feels like fireworks.
+- Contoo 2: the field at 25 s and later is dense (Contoo 1's density curve: a rock in your path every 6 s at
+  25 s, 3.9 s at 1 min); with gravity, moons and swarms on top it may feel crowded. Tune `pathGap` if so.
 
 ## Assets
 
@@ -181,3 +246,4 @@
 | Conto 2 | 2026-10-11 | (to ask) | ~1 h 10 min wall clock, no GPU; full build of 11 rocks ~11 min, fragments ~2 min, check sheet ~1 min |
 | Conto 3 | 2026-10-11 | (to ask) | ~2 h 30 min wall clock incl. listening; 6 ACE-Step text tracks (~4.3 min each), ~60 audio-to-audio (10–25 s), 24 Z-Image sprites |
 | Contoo 1 | 2026-10-11 | (to ask) | Cloud session; the meteor field took three designs (direction bins over-filled near you; far-cap inflow + turn fill is exact) |
+| Contoo 2 | 2026-10-12 | (to ask) | Cloud session; gravity needed two fixes (full-strength pull emptied the field into the big rocks; all-pairs loop 3.5 ms → grid 1 ms) |

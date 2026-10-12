@@ -35,6 +35,7 @@ export async function loadMeteors(manifest, set, onProgress = () => {}, { groups
       ...shape,
       collisionRadius: entry.collisionRadius ?? 0.8,
       collisionSpheres: entry.collisionSpheres ?? [],
+      sizeInRock: entry.sizeInRock ?? 0.85,  // fragments: radius relative to the rock they broke from
       tris: entry.tris?.[set] ?? shape.geometry.index.count / 3,
     });
     onProgress(++done, entries.length);

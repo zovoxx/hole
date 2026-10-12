@@ -25,14 +25,14 @@ something works better, and update this file when you do. All numbers are starti
 | `loader.js` | Reads `assets/manifest.json`, loads the chosen set, drives the loading bar, falls back to placeholder meshes if a file is missing |
 | `input.js` | Keyboard (WASD) and multi-touch buttons → held directions |
 | `flight.js` | Circle, turning momentum, forward speed, gravity drift on the player |
-| `world.js` | Floating origin, the meteor field (inflow, turn fill, dropping), collision, instance writing |
+| `world.js` | Floating origin, the meteor field (inflow, turn fill, dropping), types at spawn, swarms, massive meteors and their escape sheets, gravity on meteors, fuses, explosions and fragments, collision, instance writing |
 | `space.js` | Starfield, dust motes, the drifting dust/haze sprites (murk) |
-| `meteors.js` | Meteor types, instanced rendering, tint/crack/pulse shader, fuses, explosions, fragments |
+| `meteors.js` | Type tints, the tell factor, instanced rendering with the fade/crack/pulse shader, the dust ring of massive meteors |
 | `sprites.js` | Loads the dust / haze / flash sprite textures from the manifest; sprite materials (tint, normal or additive) |
-| `gravity.js` | Big/massive pull on meteors and on the player, swarms, escape gaps |
+| `gravity.js` | Pure math: attractor pull on meteors, the massive pull on the player (turn + drift), orbits and slingshots, the escape-sheet layout and its holes |
 | `walls.js` | Wall timing, layout, hole placement and reachability check |
 | `difficulty.js` | The single difficulty curve and every value derived from it |
-| `fx.js` | Camera effect stack: shake layers, lean/roll, edge darkening, stretch, explosion flash lights |
+| `fx.js` | Explosion flash (pooled point lights + glow sprites) and the camera kick; Contoo 3 adds the other shake layers, lean/roll, edge darkening, stretch |
 | `audio.js` | Music loops and synthesized sounds |
 | `ui.js` | HUD (cross, circle, timer, touch buttons), the loading / start / game-over screens, fullscreen, best time |
 | `style.css` | Page, HUD and screen styles (sizes from `--u` = 1% of min(width, height)) |
@@ -54,17 +54,31 @@ something works better, and update this file when you do. All numbers are starti
   dark-range curve squares contrast, so fogged rocks showed as dark silhouettes.
 - Lights ride with the camera (ambient + key from upper left + a faint rim from ahead), so rocks look the same
   whichever way you face: no lighting cue for "up".
-- Meteors: one `InstancedMesh` per rock shape. Per-instance attributes: tint, crack strength, pulse phase,
-  fade. The shader extends `MeshStandardMaterial` (`onBeforeCompile`):
+- Meteors: one `InstancedMesh` per rock shape (8 small, 3 big, 4 fragments). Per instance: the tint
+  (`instanceColor`) and `aFx` = (fade, crack, glow, seed). The shader extends `MeshStandardMaterial`
+  (`onBeforeCompile`, `meteors.js`):
   - Tint multiplies the neutral-gray base color (gray rock, pale→deep yellow decoy, deepest-yellow exploder).
-  - Cracks are procedural (3D Voronoi edges in object space) and emissive; their strength is multiplied by a
-    "tell" factor that is 0 far away, faint at mid distance and full up close. The same factor drives the
-    dust ring of massive meteors.
-  - Fade-in (`aFade`) is extra fog: the fogged colour is blended further toward the fog colour, so a rock
+  - Cracks are procedural (F2 − F1 of a 3D Voronoi pattern in the rock's own space, `seed` shifts it; a hash of
+    the two cells leaves some borders dark so it doesn't read as a regular net) and emissive, so the fog washes
+    them out like the rock. Only instances with crack > 0 run the Voronoi (a branch per instance). Crack strength
+    = `EXPLODER.crackRest` × tell + `crackFuse` × (fuse progress)²; the glow is the pulse (0.6 Hz at rest →
+    7 Hz at the end of the fuse; the world advances its phase). Fragments start hot (crack 1.6, cooling in
+    ~0.7 s).
+  - The tell factor (`tellAt`, `TELL`) is (1 − smoothstep(50, 150, distance to the surface))³: 0 past 150 m,
+    ~0.12 at 100 m, 1 nearer than 50 m. The same factor drives the dust ring.
+  - Dust ring (massive meteors, `DustRing`): 3,000 points on PC / 1,500 on mobile in a thin disc 1.45–2.7
+    radii out in the swarm's plane, inner dust going round faster; 88% fine grains (0.12–0.5 m), 12% big faint
+    puffs (3–7 m, 10% alpha) that blur them into a band; fogged in the shader; opacity = tell × fade.
+  - Fade-in (`aFx.x`) is extra fog: the fogged colour is blended further toward the fog colour, so a rock
     arriving at the far edge comes out of the murk smoothly. No transparency, no sorting. (A dithered fade
     showed as hatched discs on big rocks.)
-- Explosion flash: a small pool of point lights (max 2 active) plus an additive glow sprite at the explosion.
-  Never a full-screen flash.
+- Explosion flash (`fx.js`): two point lights always in the scene (intensity 0 when idle, so shaders never
+  recompile; the newest flash takes one) light the rocks around it (9,000 cd × rock size / 7 m at the peak,
+  range 150 m, 0.9 s) plus an additive glow sprite at the explosion (flash texture × 3.5 gain, 5 rock radii)
+  whose size is capped at 0.35 × its distance, so it never covers the screen. A far flash glows through the fog
+  a little (opacity × visibility^0.45). Never a full-screen flash.
+- Camera kick: a damped 8 Hz wobble in pitch/yaw (never roll), 2.6° × (1 − d / 230 m)² × √(size / 7 m),
+  0.5 s; kicks add up, capped at 4.5°. Only the canvas camera moves.
 - The camera never uses `lookAt` with a fixed up vector. Orientation is a quaternion that only changes by
   pitch and yaw in camera space; lean roll is a separate visual offset that eases back to zero.
 
@@ -122,12 +136,25 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   collision spheres seen from a random direction, as a disc, plus the player's radius, over shapes and sizes;
   `effectiveRadius` and `meanCrossSection` in `world.js`). Measured: one per 7.9 s for a planned 8 s. Past
   `WORLD.maxMeteors` (3,000 in the cone) rocks get bigger instead of more (same on PC and mobile).
-- **Sizes:** small shapes 4–11 m radius, big shapes 14–30 m (4% of the count; plain gray rocks until
-  Contoo 2), log-uniform; drift up to 0.3 × player speed (big 40% of that); spin 0.05–0.6 rad/s.
+- **Sizes:** small shapes 4–11 m radius, big shapes 14–30 m (4% of the count), log-uniform; drift up to
+  0.3 × player speed (big 40% of that); spin 0.05–0.6 rad/s.
+- **Types (Contoo 2, at spawn):** a small rock is an exploder (`exploderShare` 0.8% → 1.6%), a decoy
+  (`decoyShare` 12% → 18%; shade = 1 − (1 − u)^bias with the bias 1.4 → 3, so later decoys sit near the deep
+  end, and the deep end itself moves toward the exploder colour by `decoyCloseness` 0 → 0.6) or gray. Shares
+  are of the count, which is large (165 rocks/s enter the cone at the start, 690/s at full difficulty), so a
+  1% exploder share already means one near your path every ~10 s at the start. A big rock comes with 3–6 small
+  moons (2–4.5 m) on orbits at 1.7–2.8 radii. Massive meteors are not a share: one is put near your path every
+  `massiveGap` s (45 → 16 s, first one after 20–34 s), 3–13° off your heading, radius 16–30 m (the big
+  shapes, so from far it looks like a big rock).
+- **Groups arrive beyond the far edge:** a big rock entering through the far cap is set back along its flight
+  line by its moons' orbit; a massive meteor starts at R + 1.35 × swarm radius + 15 m with its swarm and
+  escape sheet. Beyond R a rock's fade stays 0 and it isn't drawn; crossing R it fades in like any arrival.
+  These rocks carry a `far` allowance so they aren't dropped as "past the fog".
 - **Drawing:** every frame only the meteors whose bounding sphere is in view are written into their shape's
   `InstancedMesh` (~250 at the start, ~600 at full difficulty).
 - **Nothing from behind:** meteor speeds stay below player speed (fragments and slingshots are the
-  exception and are recycled once they are behind and out of view).
+  exception; nothing exists behind you, so they are dropped once behind and out of view). A massive meteor is
+  kept while it still pulls you and is not behind you (cos > −0.5), even outside the cone.
 - **Difficulty is applied at spawn time only:** each meteor stores its type, color and speed when it spawns.
 - **Collision:** the player is a 0.5 m sphere. Each rock's `collisionSpheres` from the manifest (5% under the
   surface, rotated and scaled with the instance) are tested against the player's sphere with a swept test
@@ -138,12 +165,37 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
 
 ## Gravity, swarms and escape gaps
 
-- Only big and massive meteors attract (O(meteors × attractors), attractors are few). Semi-implicit Euler.
-- When a massive meteor spawns, it comes with a swarm: members placed on orbits (some bound, some passing
-  fast enough to slingshot).
-- Escape rule: while the pull on the player is above a threshold, spawn extra meteors on the side opposite
-  the massive meteor, laid out to leave at least one gap wide enough for the turn radius at the current
-  speed.
+As built in Contoo 2 (`gravity.js`, `world.js`, values in `GRAVITY`):
+
+- Only big and massive meteors attract. Softened inverse square, mu chosen so a circular orbit at 2.5 radii
+  takes `period` s (big 20 s, massive 16 s), out to `range` radii (big 3.5, massive 6), fading over the outer
+  40%. Semi-implicit Euler.
+- A rock's own host pulls it fully every frame (moons and swarms orbit smoothly). Other attractors pull it
+  with `fieldPull` (big 0.15, massive 0.6), every third frame with 3·dt. At full strength the slowly drifting
+  field fell into the big rocks by the hundred (gravitational focusing ~10×) and thinned the field by 15%.
+- Speed: a grid of 100 m cells lists the attractors whose reach touches each cell, so a rock only looks at a
+  few. Field update + instance writing ~1 ms a frame at full difficulty on the dev machine (Contoo 1: 0.2 ms;
+  all-pairs gravity was 3.5 ms).
+- A meteor falling deep into a massive meteor (0.7 × its collision radius) is hidden inside it and dropped.
+  Big rocks don't swallow (rocks pass through them as in Contoo 1), so the planned density holds.
+- Swarm of a massive meteor: 9–15 members (2.5–7 m) in one plane (±12°) at 1.8–3.6 radii, a quarter of them
+  slingshots falling in from further out at 1.1 × escape speed, aimed to pass 2.2–3 radii off the centre (they
+  swing round at ~2× orbital speed). Members can be exploders.
+- Pull on the player (massive only, `playerPull`): within range = 90 m + 4 radii, s = ((range − d) / (range −
+  radius))^1.5. It turns you toward the meteor by 200 °/s × s × pull × sin(angle off your heading) (camera
+  space, added to the flight model's turn rate, so it never rolls) and drags you sideways at up to 20 m/s × the
+  same (smoothed over 0.35 s); both fade out as it goes behind you (smoothstep of cos from −0.5 to 0). `pull`
+  goes 0.75 → 0.9 and is capped there: beside a massive meteor halfway in, the pull is 64 °/s at most, so
+  holding against it (70 °/s) always wins. Measured: 1 °/s at the edge, ~27 °/s at 30° off halfway in.
+- Escape rule (`escapeLayout`): decided when the massive meteor spawns (so nothing pops in): a porous sheet of
+  extra rocks (4–9 m, a 21 m grid jittered, ±12 m deep) just in front of it, on the far side of your line from
+  it, from 6 to ~135 m out and ±95 m across, with 1–2 holes (15 m clear plus each rock's radius) placed outside
+  the swarm and 24–80 m (or just past the swarm) from your line. The sheet moves with the massive meteor and
+  ignores gravity, so the holes stay open; new field rocks are not spawned inside a hole, and field rocks still
+  fading in inside one are taken out. Sheet rocks are gray or decoys, never exploders.
+- Tests (`tools/test_world.mjs`): do nothing near a massive meteor in your path and you hit it (39–40 of 40);
+  steering through a hole gets you out (39–40 of 40, at the start and at 77 m/s ten minutes in, with a simple
+  bang-bang pilot that keeps holding away until it lets go); every hole is clear and on the escape side.
 
 ## Walls
 
@@ -153,6 +205,23 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   simulating the flight model (same code as `flight.js`) from the current state: the turn must fit inside the
   warning time with margin; otherwise pick another layout.
 
+## Fuses and explosions
+
+As built in Contoo 2 (`world.js`, `EXPLODER`, `EXPLOSION`):
+
+- The fuse lights when an exploder is in view, ahead, within 70 m of your path (plus its radius) and closer
+  than (fuseSeconds + leadSeconds) × speed (2 + 1.75 s: 150 m at 40 m/s, 262 m at 70 m/s), so it blows up
+  1.75 s ahead of you (70 m at 40 m/s), the time to dodge staying the same as speed grows. Exploders passing
+  further to the side never light. A share (`farShare` 15% → 5%) light on their own when they come within
+  200–265 m anywhere in view: far explosions, so the player learns they exist. Nothing lights behind the start
+  screen.
+- Explosion: the exploder is removed; if it is in view, 6–12 pieces (the 4 fragment meshes, each sized
+  rock radius × sizeInRock × (4 / n)^⅓ × 0.55–0.9) fly out at 16–38 m/s on top of its drift, spin 0.8–3 rad/s
+  and act as rocks (collision spheres from the manifest, gravity). If the fuse lit near your path, 1–2 pieces
+  are aimed at where you will be if you fly on (an intercept), missing by 0.5–7 m: flying on, ~40% of runs get
+  hit; turning away 0.3 s after the flash, ~5%. An explosion out of view throws no pieces (nothing unseen can
+  hit you). Each explosion goes to `field.events`; `main.js` hands it to `fx.explode` (flash, light, kick).
+
 ## Difficulty curve
 
 - `t` = seconds survived. One smooth curve, `D(t) = 1 − e^(−t/40)` (fast first minute) plus a slow
@@ -161,7 +230,8 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   77 m/s and 2.2 s.
 - Every knob is a function of `D`: forward speed, meteor count, wall interval (15 s → 6 s floor), wall warning
   (4 s → 2 s floor), exploder share, massive share, pull strength, decoy-to-exploder color distance,
-  background color, dust density.
+  background color, dust density. Contoo 2 adds (`knobs()`): `decoyShare`, `exploderShare`, `decoyCloseness`,
+  `decoyDeepBias`, `massiveGap` (geometric) and `pull` (capped at its D = 1 value).
 
 ## Camera effects
 
@@ -309,8 +379,16 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
 
 - `python tools/check_public.py`: file limits, lowercase names, no LFS pointer files in `public/`, every
   manifest path exists.
-- `node tools/test_world.mjs` (a few seconds, no browser): flight model, difficulty curve, meteor field
-  (even density, nothing pops, nothing from behind, path-gap calibration).
+- `node tools/test_world.mjs` (~1 min, no browser): flight model, difficulty curve, meteor field (even
+  density, nothing pops, nothing from behind, path-gap calibration), and Contoo 2: type shares and decoy
+  colour over a run, the tell, where fuses light and blow up (40 and 70 m/s), pieces (count, aimed, gravity,
+  dodgeable), orbits and slingshots, the massive pull (edge, halfway, late in a run, behind), do nothing → hit
+  it, escape through a hole, the escape sheet's holes.
+- `NODE_PATH=$(npm root -g) node tools/check_danger.mjs [out.jpg] [--tiles dir]` (Playwright, ~5 min): the
+  Contoo 2 check sheet `docs/checks/contoo2_danger.jpg` (exploder vs deep decoy by distance, a lit fuse and the
+  blast, big rock vs massive meteor by distance, play). `?debug` also has `hole.stage()` (an empty stage: no
+  field rocks, no massive meteors, only placed rocks hit), `hole.place({ type, dist, s, side, up, ... })` and
+  `hole.spawnMassive({ dist, offAxis, s, ... })`.
 - `NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]` (Playwright,
   ~5 min): serves `public/` itself and plays the game on desktop and on iPhone, Android and iPad emulation
   (portrait, landscape, rotation): no console errors or 404s, keys and two-thumb touch, circle speed and

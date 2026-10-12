@@ -12,9 +12,17 @@ export const geometricKnob = ([a, b], D) => a * (b / a) ** D;
 
 export function knobs(t, c = DIFFICULTY) {
   const D = difficulty(t, c);
+  const clamp01 = (x) => Math.min(1, Math.max(0, x));
   return {
     D,
     speed: linearKnob(c.speed, D),          // m/s forward
     pathGap: geometricKnob(c.pathGap, D),   // s between rocks in your path (meteor density)
+    // Contoo 2: shares of the small rocks, decoy colour, massive meteors, pull
+    decoyShare: linearKnob(c.decoyShare, D),
+    exploderShare: linearKnob(c.exploderShare, D),
+    decoyCloseness: clamp01(linearKnob(c.decoyCloseness, D)),
+    decoyDeepBias: linearKnob(c.decoyDeepBias, D),
+    massiveGap: geometricKnob(c.massiveGap, D),
+    pull: Math.min(c.pull[1], linearKnob(c.pull, D)),  // capped: holding against a pull must always win
   };
 }
