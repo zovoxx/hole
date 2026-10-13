@@ -115,15 +115,52 @@
     pieces, a massive meteor pulling you) pass. Check sheet `docs/checks/contoo2_danger.jpg` from
     `tools/check_danger.mjs`.
 
+- **Contoo 3: Pressure** (2026-10-13). Walls, the full difficulty curve, camera effects, sound and music in the
+  game, and the owner's two wishes (a settings panel with the debug read-out as a setting, off by default; no
+  difficulty options).
+  - Walls (`walls.js`): a curtain of rocks (10–15 m, 12 m apart, 98% solid) on part of a sphere around where you
+    are when it appears, so it stands across every direction you could turn to; 1–2 holes. It comes out of the
+    murk 4 s ahead early (3.6 s at 15 s, 2.5 s at 1 min) and 2 s ahead from ~2 minutes; one every 15 s early,
+    every 6 s late (±15%). Holes are never on your path (flying on as you are passes outside their rim) and every hole
+    is made by a simulated pilot that starts steering 0.6 s after the wall appears (the real flight model, the
+    pull, rocks plugging the hole); otherwise another layout, or the wall waits. Turning when it appears, holes
+    can be where you are turning to. The field thins around each wall (clear approach, short calm after).
+    Combos from ~35 s: exploders in the wall (they blow up ~1.2 s before you get there) and walls next to a
+    massive meteor (holes lined up with its escape holes or away from it, the pilot fights the pull and flies on
+    through its escape sheet).
+  - Difficulty: `knobs()` now drives the wall gap and warning (eased so the first half minute stays gentle), two
+    holes or one, wall exploders, combos, and `deep`: space goes from blue-black to red-black (~0.6 at 1 min, 0.9
+    at 5 min) and the dust thickens (more motes fading in one by one, stronger red-gray dust and haze).
+  - Camera (`fx.js`): handling rattle (always a little, more when steering against your momentum), gravity rumble,
+    the lean (a roll toward a massive meteor up to 25°, easing back), a darker screen edge on its side, a slight
+    stretch toward it, a near-miss kick; all smooth and capped at 4.5°; your steering follows the leaned screen.
+    The HUD never moves (tested).
+  - Audio (`audio.js` `Sfx`, `sound.js`): synthesized whoosh (near misses, panned), rumble (the pull), booms
+    (explosions, by distance), crash (the hit); levels set by offline renders against the music. The music
+    loads in the background, starts with the first run, follows the run time (5-minute cycles, deeper each
+    time), goes under and sinks to calm on game over, starts over with the next run. Audio unlocks on the first
+    key, click or tap (touchend), pauses in a hidden tab.
+  - Settings (`settings.js`, gear on the start and game-over screens): Music and Sounds volume (10 steps, default
+    80%), Debug info (the top-left read-out; off by default, `?debug` no longer shows it). Taps only; presses on the
+    panel never start a run. Saved in `localStorage`.
+  - Tests: `tools/test_world.mjs` (~2 min, all pass: walls, combos, calm, near misses on top of Contoo 1–2; two
+    Contoo 1–2 checks had thresholds tighter than their run-to-run scatter and were widened to the measured
+    spread: the path gap ±25%, explosion pieces ≥20% / <16%) and
+    `tools/test_game.mjs` (~45 s, all pass on desktop, iPhone portrait/landscape, Pixel, iPad: settings by mouse
+    and touch, audio unlock, music following the run, a wall in a run, HUD steady under shake and lean, the lean
+    easing back, red-black space). Check sheet `docs/checks/contoo3_pressure.jpg` from `tools/check_pressure.mjs`.
+
 ## Next
 
-- **Try Contoo 2 on the deployed site** (PHASES Contoo 2 "Done when"), on PC and phone: from far, can you
-  tell an exploder from a deep-yellow decoy, or a massive meteor from a big rock? (You shouldn't.) Up close,
-  are the cracks, pulse and dust ring obvious? Is an exploder blowing up ahead scary but dodgeable? Near a
-  massive meteor, do you drift and turn toward it and have to hold against it, and is there always a way out?
-  Is there too much or too little of anything (explosions, yellow rocks, massive meteors)? Does it stay smooth
-  on your phone? Contoo 1's points still apply (control weight, speed, density, darkness, iPad warning).
-- **Contoo 3: Pressure.** Say "make contoo phase 3". Walls, the full difficulty curve, camera effects, sound.
+- **Try Contoo 3 on the deployed site** (PHASES Contoo 3 "Done when"), on PC and phone, with sound on: do walls
+  appear about 4 s ahead early and about 2 s ahead after a few minutes, is there always a hole you can make if you
+  react, and is it never straight ahead? Over a long run, does space get denser, faster and redder with no
+  visible step? Do the shakes feel like smooth wobbles (not jitter), and does the lean near a massive meteor ease
+  back? Do you hear the whoosh, the rumble and the boom, and does the music rise without a switch and fall back
+  to calm after 5 minutes? Are the sound levels right next to the music (Settings has both volumes)? Is
+  anything too much (walls too often or too dense, rattle too strong, whooshes too frequent)? Contoo 1–2's points
+  still apply.
+- **Contoo 4: Tune and ship.** Say "make contoo phase 4". Feel, fairness and performance with your feedback.
 
 ## Decisions
 
@@ -181,9 +218,32 @@
     60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
     direction", never "you can't get out").
 
+- Contoo 3 judgement calls (tell me if any is wrong):
+  - Walls are part of a sphere around you (the same distance in every direction you could turn to), not a flat
+    curtain: a flat one that still fills the view as you close in needed 4–5× the rocks, and you could fly round
+    its edge.
+  - The wall warning and gap follow D^1.6, not D: with the plain curve the first wall (at ~15 s) had only 3.4 s of
+    warning; now 3.6 s, 2.5 s at 1 minute, 2 s from ~2 minutes.
+  - Holes are checked against rocks only in the last 0.8 s before the wall and in the hole itself; rocks earlier on
+    the way are dodged like any rock (a pilot that never dodges hit one on about half the layouts late in a run).
+  - Turning as a wall appears, its holes may be where you are turning to (up to 45° off, at first off-screen in
+    portrait).
+  - Wall exploders blow up ~1.2 s before you reach the wall (field exploders 1.75 s): late walls only give 2 s.
+  - Added a Sounds volume next to Music, and a crash sound on the hit. The music starts with the first run (the
+    start screen stays silent) and goes under on game over.
+  - Volume steps are − / + buttons, not sliders: every touch on the page is cancelled (no zoom), and drags raise
+    Safari's fullscreen warning.
+
 ## Notes for Contoo
 
-- Contoo 2 → 3: walls can be laid out like the escape sheet (`escapeLayout` in `gravity.js`: decided beyond the
+- Contoo 3 → 4: tuning knobs are `WALL`, `SHAKE`, `SOUND`, `DEEP` and the wall knobs in `DIFFICULTY`
+  (`config.js`). The wall pilot (`pilot()` in `walls.js`) is shared with the tests and the check sheet; the
+  fairness audit can run `wallRun()` / `comboRun()` from `tools/test_world.mjs` over the whole difficulty range.
+  Cost on the dev machine: field + walls + instance writes ~1.2 ms a frame at the start with a wall, ~2.2 ms at
+  10 minutes (a wall adds ~0.1–0.5 ms; planning one takes 3–7 ms once, in the frame it appears). A wall draws up to
+  ~400 extra rocks (mobile 800 tris each); if phones stutter near walls: bigger, fewer wall rocks (the spacing
+  and size in `WALL` keep coverage at ~97–98% from 10 m/8–12 m to 12 m/10–15 m), mobile LOD, or plan over two frames.
+- Contoo 2 → 3 (done): walls can be laid out like the escape sheet (`escapeLayout` in `gravity.js`: decided beyond the
   far edge, moving together, `noGrav`, holes kept clear of new spawns with `inHole`); the reachability check can
   reuse the test pilot in `tools/test_world.mjs` (`stage()`, `circleTo`). The camera effects go into `fx.js`
   next to the explosion kick (`fx.kickRotation`); the pull's strength for the rumble, lean, dark edge and stretch
@@ -211,6 +271,14 @@
   crack/pulse shader in Contoo extends it with `onBeforeCompile`; `instanceColor` already carries the tint.
 
 ## Open questions / assumptions
+
+- Contoo 3: the owner asked to remove the difficulty options, but the game had none (no settings existed before
+  this phase, and the code never had a difficulty choice). The new settings panel has none either; difficulty
+  depends only on time survived (DESIGN §11). If you saw difficulty options somewhere, say where.
+- Contoo 3: walls are sphere-shaped around you (not flat), so they stand across every direction you could turn to;
+  you see them come out of the murk as a curtain. Turning hard away (a U-turn) can still leave a wall behind you;
+  that costs time in the field like any turn.
+- Contoo 3: on iPhone the ring/silent switch mutes web audio (Safari's default); the game doesn't override it.
 
 - The Cloudflare Worker is assumed to be named `hole` (`wrangler.jsonc`). If the dashboard uses another name,
   change `name` there.
@@ -247,3 +315,4 @@
 | Conto 3 | 2026-10-11 | (to ask) | ~2 h 30 min wall clock incl. listening; 6 ACE-Step text tracks (~4.3 min each), ~60 audio-to-audio (10–25 s), 24 Z-Image sprites |
 | Contoo 1 | 2026-10-11 | (to ask) | Cloud session; the meteor field took three designs (direction bins over-filled near you; far-cap inflow + turn fill is exact) |
 | Contoo 2 | 2026-10-12 | (to ask) | Cloud session; gravity needed two fixes (full-strength pull emptied the field into the big rocks; all-pairs loop 3.5 ms → grid 1 ms) |
+| Contoo 3 | 2026-10-13 | (to ask) | Cloud session; walls took a coverage sweep (82% → 98% solid: bigger rocks, no thin shapes), the pilot tuned and holes allowed where you are turning to; plus the owner's settings panel |

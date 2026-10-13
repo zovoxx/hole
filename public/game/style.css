@@ -26,6 +26,7 @@ body[data-mode="run"], body[data-mode="hit"] { cursor: none; }
 #vignette { position: fixed; inset: 0; pointer-events: none;
             background: radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 2, 0.5) 100%); }
 #edge { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
+#lean-edge { position: fixed; inset: 0; pointer-events: none; opacity: 0; }
 
 /* ---- HUD: never touched by camera effects */
 #hud { position: fixed; inset: 0; pointer-events: none; display: none; }
@@ -100,6 +101,33 @@ body.touch .pad { display: flex; }
 .fs svg { width: 1.2em; height: 1.2em; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round;
           stroke-linejoin: round; }
 
+/* ---- settings (start and game-over screens) */
+.gear { position: absolute; top: max(calc(var(--u) * 3), env(safe-area-inset-top)); right: max(calc(var(--u) * 3), env(safe-area-inset-right));
+        width: clamp(40px, calc(var(--u) * 7), 56px); height: clamp(40px, calc(var(--u) * 7), 56px); padding: 0;
+        display: grid; place-items: center; border-radius: 50%; cursor: pointer; pointer-events: auto; color: var(--ink);
+        background: rgba(200, 212, 240, 0.06); border: 1px solid rgba(210, 220, 240, 0.22); }
+.gear:hover { background: rgba(200, 212, 240, 0.14); }
+.gear svg { width: 54%; height: 54%; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linejoin: round; }
+#settings { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(1, 2, 5, 0.55); z-index: 10;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+#settings[hidden] { display: none; }
+#settings .card { width: min(360px, 88vw); padding: clamp(16px, calc(var(--u) * 4), 28px); border-radius: 18px;
+                  background: rgba(12, 15, 24, 0.92); border: 1px solid rgba(210, 220, 240, 0.16); color: var(--ink);
+                  display: flex; flex-direction: column; gap: clamp(10px, calc(var(--u) * 2.2), 16px);
+                  font-size: clamp(14px, calc(var(--u) * 2.6), 17px); letter-spacing: 0.06em; }
+#settings h2 { margin: 0 0 4px; font-weight: 300; font-size: 1.25em; letter-spacing: 0.3em; text-transform: uppercase; color: #d3d9e6; }
+#settings .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+#settings button { font: inherit; color: var(--ink); cursor: pointer; background: rgba(200, 212, 240, 0.08);
+                   border: 1px solid rgba(210, 220, 240, 0.28); border-radius: 12px; }
+#settings button:hover { background: rgba(200, 212, 240, 0.16); }
+.stepper { display: flex; align-items: center; gap: 6px; }
+.stepper button { width: 44px; height: 44px; font-size: 1.3em; line-height: 1; padding: 0; }
+.stepper output { min-width: 4.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.toggle { min-width: 88px; height: 44px; padding: 0 1em; }
+.toggle[aria-pressed="true"] { background: rgba(140, 170, 255, 0.24); border-color: rgba(170, 190, 255, 0.55); }
+#settings .done { height: 46px; margin-top: 4px; letter-spacing: 0.2em; text-transform: uppercase; }
+
 #debug { position: fixed; left: 8px; top: 8px; margin: 0; font: 11px/1.45 ui-monospace, Consolas, monospace;
-         color: #8d97ad; pointer-events: none; white-space: pre; text-shadow: 0 0 4px #000; }
+         color: #8d97ad; pointer-events: none; white-space: pre; text-shadow: 0 0 4px #000; z-index: 5; }
+#debug[hidden] { display: none; }
 .noscript { position: fixed; inset: 0; display: grid; place-items: center; margin: 0; color: #c9cfdc; }

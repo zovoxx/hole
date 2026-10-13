@@ -19,7 +19,7 @@ something works better, and update this file when you do. All numbers are starti
 
 | File | Job |
 | --- | --- |
-| `main.js` | Boot, game states (loading → start → run → hit → game over), main loop (`frame` draws, `tick` is one game step), hit effect, camera FOV |
+| `main.js` | Boot, game states (loading → start → run → hit → game over), main loop (`frame` draws, `tick` is one game step), hit effect, camera FOV, the lean and stretch applied to the camera, space colour over a run |
 | `config.js` | Every tunable number in one place (speeds, ranges, curves, colors) |
 | `device.js` | Picks the `pc` or `mobile` asset set; `?set=pc` / `?set=mobile` overrides it for testing |
 | `loader.js` | Reads `assets/manifest.json`, loads the chosen set, drives the loading bar, falls back to placeholder meshes if a file is missing |
@@ -30,25 +30,31 @@ something works better, and update this file when you do. All numbers are starti
 | `meteors.js` | Type tints, the tell factor, instanced rendering with the fade/crack/pulse shader, the dust ring of massive meteors |
 | `sprites.js` | Loads the dust / haze / flash sprite textures from the manifest; sprite materials (tint, normal or additive) |
 | `gravity.js` | Pure math: attractor pull on meteors, the massive pull on the player (turn + drift), orbits and slingshots, the escape-sheet layout and its holes |
-| `walls.js` | Wall timing, layout, hole placement and reachability check |
+| `walls.js` | Wall timing and calm, the curtain's net of rocks, hole placement, the simulated pilot and the reachability check, combos |
 | `difficulty.js` | The single difficulty curve and every value derived from it |
-| `fx.js` | Explosion flash (pooled point lights + glow sprites) and the camera kick; Contoo 3 adds the other shake layers, lean/roll, edge darkening, stretch |
-| `audio.js` | Music loops and synthesized sounds |
-| `ui.js` | HUD (cross, circle, timer, touch buttons), the loading / start / game-over screens, fullscreen, best time |
+| `fx.js` | Explosion flash (pooled point lights + glow sprites) and the camera shake stack: explosion and near-miss kicks, handling rattle, gravity rumble, the lean (roll, darker edge side, stretch amount) |
+| `audio.js` | `Music` (the intensity loops, the 5-minute cycle, the game-over duck) and `Sfx` (synthesized whoosh, rumble, boom, crash) |
+| `sound.js` | The game's audio: one AudioContext, unlock on the first gesture, music loading in the background, what plays when (run, hit, restart), volumes |
+| `settings.js` | Player settings (music volume, sound volume, debug read-out) in `localStorage` |
+| `ui.js` | HUD (cross, circle, timer, touch buttons), the loading / start / game-over screens, fullscreen, best time, the settings panel, the lean's darker edge |
 | `style.css` | Page, HUD and screen styles (sizes from `--u` = 1% of min(width, height)) |
 
 ## Rendering and layers
 
-- One full-screen WebGL canvas shows space. Above it, a DOM layer for edge darkening, and above that the HUD
-  (cross, circle, timer, buttons) and screens. Camera effects only touch the canvas camera and the darkening
-  layer, so the HUD can never shake, roll or flash.
+- One full-screen WebGL canvas shows space. Above it, DOM layers for edge darkening (`#lean-edge`: the side of a
+  massive meteor; `#edge`: the hit and the restart), and above that the HUD (cross, circle, timer, buttons) and
+  screens. Camera effects only touch the canvas camera and the darkening layers, so the HUD can never shake, roll
+  or flash.
 - Background: an even sprinkle of procedural stars at infinity (3,200 points at 1 km around the camera,
   uniform on the sphere, soft round points, `space.js`), so there is no top, bottom or seam. Dust: motes in a
   45 m box around the camera that wraps in the vertex shader (speed feel) plus a few big dust/haze sprites from
   the conto drifting in the murk (spawned and dropped like the meteors, thinning out as you get close).
 - Fog: exponential-squared, exactly the background color, reaching 2% visibility at the field's radius
-  (`WORLD.fogAtRadius`), so far meteors are washed out and a meteor at the edge is gone. The background/fog
-  color shifts from blue-black to red-black with difficulty (Contoo 3), and the dust gets denser.
+  (`WORLD.fogAtRadius`), so far meteors are washed out and a meteor at the edge is gone.
+- Depth over a run (Contoo 3, `knobs().deep` = smoothstep of D from 0.15 to 1.35, `DEEP`): background and fog go
+  from blue-black `#05070d` to red-black `#0f0408` (~0.25 at 30 s, 0.6 at 1 min, 0.9 at 5 min); dust and haze
+  sprites and the motes turn from blue-gray to red-gray and get 35–50% stronger, and 70% more motes fade in one by
+  one (each has a rank; the shown share rises smoothly). Nothing steps or pops.
 - No tone mapping (`NoToneMapping`): the scene is dark, the yellows stay yellow, and fog blends linearly. With
   Neutral tone mapping the background (not tone mapped) and fully fogged rocks (tone mapped) differ, and its
   dark-range curve squares contrast, so fogged rocks showed as dark silhouettes.
@@ -80,7 +86,10 @@ something works better, and update this file when you do. All numbers are starti
 - Camera kick: a damped 8 Hz wobble in pitch/yaw (never roll), 2.6° × (1 − d / 230 m)² × √(size / 7 m),
   0.5 s; kicks add up, capped at 4.5°. Only the canvas camera moves.
 - The camera never uses `lookAt` with a fixed up vector. Orientation is a quaternion that only changes by
-  pitch and yaw in camera space; lean roll is a separate visual offset that eases back to zero.
+  pitch and yaw in camera space; lean roll is a separate visual offset that eases back to zero. The camera shown
+  is `q × lean × shake × hit kick`; the frustum (spawning, dropping, fuses) uses that camera with the projection
+  before the stretch, which sees slightly more than the stretched view, so nothing is placed or dropped where it
+  would show.
 
 ## Distance bands (example values, meters)
 
@@ -199,11 +208,51 @@ As built in Contoo 2 (`gravity.js`, `world.js`, values in `GRAVITY`):
 
 ## Walls
 
-- A wall is a curtain of meteors across the current flight direction with 1–2 holes, placed so that it
-  emerges from the murk exactly `warning time × speed` ahead (wall meteors fade in at that distance).
-- Holes are never on the current heading. Before a wall is spawned, the hole positions are checked by
-  simulating the flight model (same code as `flight.js`) from the current state: the turn must fit inside the
-  warning time with margin; otherwise pick another layout.
+As built in Contoo 3 (`walls.js`, `WALL`, the wall knobs in `DIFFICULTY`):
+
+- **Shape:** part of a sphere around where you are when the wall appears, radius L = warning × speed, reaching
+  115° round from your heading. So it stands at the same distance in every direction you could turn to: you can't
+  fly round it, you need a hole. Its rocks sit on an even net (a Fibonacci spiral over the cap, 12 m apart,
+  jittered ±30% sideways and ±4 m in depth), radius 10–15 m, gray with decoys like the field; only the shapes whose
+  collision spheres fill most of their size (not the thin rock_02 and rock_07). A straight path into it hits a
+  rock 98% of the time (measured with the real collision spheres).
+- **Only the part inside the kept cone exists as rocks** (~700–950 when it appears). Turning brings more of it in,
+  out of view, like the field's turn fill; parts that leave the cone are dropped and come back the same (the net
+  is fixed); a rock that blew up stays gone. Wall rocks don't drift, spin at half speed and ignore gravity
+  (`noGrav`), so the holes stay open. The wall closes (no more filling) once you are through it.
+- **Warning:** the wall appears at L, all at fade 0, and comes out of the murk in 0.7 s (`fadeRate`), so you see it
+  `wallWarn` seconds before you reach it: 4 s early, 2 s after a few minutes (linear in D^1.6, floor 2: 3.6 s at
+  15 s, 2.5 s at 1 min, 2 s from ~2 min).
+- **Holes:** 1–2 (two holes 65% → 40% of the time), 17 → 14 m clear plus each rock's whole radius, at least 75°
+  apart around your heading. Candidates: 10–24° off your heading (on screen on every device), or, if you are
+  turning, within 20° of where you would be heading after 1 s of flying on as you are (up to 45° off). A layout
+  is kept only if (`flyThrough`, the real `stepFlight`, the pull of massive meteors, 1/30 s steps):
+  - flying on as you are (the circle left where it is) passes at least 4 m outside every hole's rim (its clear
+    radius plus the biggest rock, 15 m: the rocks' collision spheres sit inside their size, so a hole is a little
+    wider than its clear radius), so a hole is never on your path;
+  - for every hole, a simulated pilot that starts steering 0.6 s after the wall appears gets through it at least
+    2.5 m inside its edge. The pilot (`pilot()`, shared with the tests) aims the cross at a point 30 m past the
+    hole with the circle like a player would: bang-bang with the circle kept near the cross (0.3 of its range),
+    braking on the way in, allowing for the pull;
+  - no rock already there (its straight-line motion, its collision reach plus 1.25 m) is in the pilot's way in
+    the last 0.8 s before the wall or in the hole itself (rocks earlier on the way are dodged like any rock).
+  Up to 16 layouts are tried (~3–7 ms); if none passes, the wall tries again every 0.25 s and is skipped after
+  4 s. Measured: placed at once 87–100% of the time when flying straight, 73–100% when turning.
+- **Rhythm and calm:** a wall every `wallGap` seconds (15 s → 6 s, geometric in D^1.6, floor 6; ±15% jitter; the
+  first after ~15 s). The field's inflow far ahead thins to 45% around each wall, timed for when you reach it
+  (from 2.5 s before to 3 s after, smooth): a clearer approach and a short calm after. Walls never come while a
+  massive meteor pulls you or will within the warning, unless it is a combo.
+- **Combos (from D ≈ 0.6, ~35 s):** exploders in the wall (0 → 3% of its rocks, never within 2.2 hole radii of a
+  hole); near your path they light as the wall appears, with a fuse of warning − 1.25 s (0.8–2 s), so they blow up
+  about 1.2 s before you reach the wall and open a gap there. A wall due near a massive meteor comes anyway with
+  chance `wallCombo` (0 → 50%): its holes are first lined up with the meteor's escape holes (where they will be),
+  else on the side away from it; the pilot check includes the pull and flies on 110 m past the wall through the
+  escape sheet; the swarm (where it will be) and the escape holes are kept open through the wall.
+- New field rocks are not spawned inside an open wall's holes (`inAnyHole`).
+- Tests (`tools/test_world.mjs`): the knobs, the rhythm and warning over a 5.5-minute run, flying straight on
+  hits the wall (0–3 of 40 slip through a random gap), the pilot gets through 25 of 25 walls at 0, 1 and 10 minutes
+  (straight and turning), combos (26 of 30 through and away; the misses are swarm and sheet rocks the pilot doesn't
+  dodge), wall exploders, the calm, near misses.
 
 ## Fuses and explosions
 
@@ -231,14 +280,32 @@ As built in Contoo 2 (`world.js`, `EXPLODER`, `EXPLOSION`):
 - Every knob is a function of `D`: forward speed, meteor count, wall interval (15 s → 6 s floor), wall warning
   (4 s → 2 s floor), exploder share, massive share, pull strength, decoy-to-exploder color distance,
   background color, dust density. Contoo 2 adds (`knobs()`): `decoyShare`, `exploderShare`, `decoyCloseness`,
-  `decoyDeepBias`, `massiveGap` (geometric) and `pull` (capped at its D = 1 value).
+  `decoyDeepBias`, `massiveGap` (geometric) and `pull` (capped at its D = 1 value). Contoo 3 adds `wallGap` and
+  `wallWarn` (in D^1.6, so the first half minute keeps slow, well-warned walls), `wallTwoHoles`,
+  `wallExploders`, `wallCombo` and `deep` (space colour and dust).
+- Everything that changes meteors reaches only new spawns far ahead. Speed, the space colour and the dust change
+  continuously and slowly.
 
 ## Camera effects
 
-- Shake layers (handling, explosion, gravity, near miss) are smooth noise, mostly rotation, summed and then
-  capped so the view stays readable.
-- Gravity: deep rumble, lean/roll toward the meteor (≤ 25°, eased back), darker screen edge on that side
-  (DOM gradient layer), slight stretch (FOV / horizontal scale).
+As built in Contoo 3 (`fx.js`, `SHAKE`): every layer is pitch/yaw of the view only (no roll except the lean),
+smooth (sums of three sines at unrelated frequencies, never random per frame) with amplitudes that glide (0.12 s),
+summed and capped at 4.5°. Only the canvas camera moves.
+
+| Layer | When | What |
+| --- | --- | --- |
+| Handling | Always | 0.05° + 0.45° × strain (how far the turn rate is from where the circle pulls it), 5–11 Hz |
+| Explosion | A blast | 2.6° × (1 − d / 230 m)² × √(size / 7 m), damped 8 Hz, 0.5 s (Contoo 2) |
+| Gravity | A massive meteor pulls | Rumble 1.1° × min(1, pull / 0.6) at 2–4 Hz; lean: a roll toward it, up to 25° × the same × its sideways share on screen (in 0.45 s, back in 1.1 s); the screen edge on its side darkens (up to 75%); the view stretches up to 6% along its direction |
+| Near miss | A rock passes within 5 m of its surface (once per rock) | 0.9° × closeness × √(size / 6 m) kick away from it, 8 Hz, 0.4 s, and the whoosh |
+
+- The lean is a roll about the view axis, so the cross still shows where you are going. Your turn follows the
+  screen as you see it: the held direction is turned by the lean into the ship's frame (up is always the top of
+  the screen), the pull acts in the ship's frame.
+- Stretch: the projection is multiplied by a scale of 1 + 6% × amount along the meteor's screen direction (in
+  pixel space), only for drawing.
+- Near misses come from `field.update`: the closest point of this frame's relative motion, closer than 5 m to the
+  rock's surface (0.85 × its radius); `field.misses`.
 
 ## Audio
 
@@ -264,9 +331,22 @@ As built in Contoo 2 (`world.js`, `EXPLODER`, `EXPLOSION`):
   audio-to-audio with rising denoise and calmer tags, so they keep its beat grid and harmony and a crossfade
   sounds like layers coming and going. `rhoNext` in the manifest is how alike a loop is to the next level;
   the crossfade divides by `sqrt(1 + rhoNext·sin 2θ)` so similar loops don't get louder in the middle.
-- Sounds are synthesized, no files: whoosh = band-passed noise sweep panned to the passing side; rumble =
-  low-passed brown noise plus a 30–50 Hz tone, gain from pull; boom = noise burst plus a falling low tone,
-  volume from distance.
+- Sounds are synthesized, no files (`Sfx` in `audio.js`): whoosh = band-passed white noise sweeping down (faster
+  = higher), panned to the passing side, louder the closer; rumble = low-passed (130 Hz) looping brown noise plus a
+  40 Hz tone wandering ±7 Hz, its level following the pull; boom = a noise burst through a low-pass that is darker
+  the further away plus a falling 95 → 32 Hz tone, loudness (1 − (d − 40) / 290)^1.6 × √(size / 7), panned;
+  crash (the hit) = a close boom. A compressor on the effects bus; at most ~10 voices.
+- Levels (`SOUND`) were set by rendering offline (OfflineAudioContext in headless Chromium) against the music:
+  loops −21 … −18 dB RMS (peaks −11 … −5 dB); a near boom and the crash peak at ~−5 dB, a full whoosh ~−8 dB, the
+  rumble at full pull −20 dB RMS. Tune by ear.
+- In the game (`sound.js`): one AudioContext made at boot, resumed on the first key / click / tap (window capture
+  listeners on keydown, mousedown, pointerup, touchend, click: touches unlock audio on touchend / pointerup, not on
+  touchstart); suspended while the tab is hidden. The music loads after the meteors without holding up the
+  loading bar, starts with the first run (or as soon as it is decoded) and follows the run time. The hit: the
+  crash, the rumble stops, the music ducks to 45% with the low-pass dip and sinks to level 1; the next run brings
+  it back and the cycle starts again at depth 0.
+- Volumes: the settings panel has Music and Sounds in 10 steps (gain = base × (step / 8)², default 8 = the mixed
+  level, 0 = off).
 
 ## Devices
 
@@ -302,6 +382,12 @@ As built in Contoo 2 (`world.js`, `EXPLODER`, `EXPLOSION`):
   multi-touch, each thumb holds the nearest button it is on (15% slop), so two thumbs give diagonals.
 - Pixel ratio capped (about 1.5 on mobile, 2 on PC); adaptive quality if frame time stays high.
 - Best time in `localStorage` (wrapped in try/catch).
+- Settings (Contoo 3): a gear button on the start and game-over screens opens a panel with Music and Sounds
+  volume (− / + steps) and a Debug info switch (the top-left read-out; off by default). Taps only (no sliders: every
+  touch on the page is cancelled, and drags raise Safari's fullscreen suspicion). Nothing on the panel reaches the
+  game behind it; keys are ignored while it is open and for 150 ms after; Escape / Enter, Done or a tap beside the
+  card closes it. Saved in `localStorage` (`hole.settings`). There are no difficulty options: difficulty depends
+  only on time survived.
 
 ## Assets
 
@@ -387,15 +473,22 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
 - `NODE_PATH=$(npm root -g) node tools/check_danger.mjs [out.jpg] [--tiles dir]` (Playwright, ~5 min): the
   Contoo 2 check sheet `docs/checks/contoo2_danger.jpg` (exploder vs deep decoy by distance, a lit fuse and the
   blast, big rock vs massive meteor by distance, play). `?debug` also has `hole.stage()` (an empty stage: no
-  field rocks, no massive meteors, only placed rocks hit), `hole.place({ type, dist, s, side, up, ... })` and
-  `hole.spawnMassive({ dist, offAxis, s, ... })`.
+  field rocks, no massive meteors, no walls, only placed rocks hit), `hole.place({ type, dist, s, side, up, ... })`,
+  `hole.spawnMassive({ dist, offAxis, s, ... })`, `hole.spawnWall({ holes: [{ off, phi }], combo, check })` and
+  `hole.setRunTime(t)` (jump the difficulty).
+- `NODE_PATH=$(npm root -g) node tools/check_pressure.mjs [out.jpg] [--tiles dir]` (Playwright, ~10 min): the
+  Contoo 3 check sheet `docs/checks/contoo3_pressure.jpg` (an early wall from appearing to its hole, a late wall
+  with exploders, the lean, blue-black vs red-black space, the settings panel and the debug read-out).
 - `NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]` (Playwright,
   ~5 min): serves `public/` itself and plays the game on desktop and on iPhone, Android and iPad emulation
   (portrait, landscape, rotation): no console errors or 404s, keys and two-thumb touch, circle speed and
   heavy counter-steer, fullscreen button, hit → game over → restart, best time, fast double taps never zoom.
   Headless Chromium draws with a software rasterizer (~0.3–1 s per frame), so the checks run on the game's
   test clock: `?debug` exposes `hole.advance(seconds)` (the same per-frame code in fixed 1/60 s steps),
-  `hole.setRendering(false)`, `hole.setTestOnly(true)` (only `hole.placeAhead()` rocks can hit) and a read-out
-  of fps, meteor counts and the flight state.
+  `hole.setRendering(false)` and `hole.setTestOnly(true)` (only `hole.placeAhead()` rocks can hit). The read-out
+  of fps, meteor counts, walls, the flight state and audio is the Debug info setting (off by default).
+  Contoo 3 adds: the settings panel (mouse and touch), audio unlocking on the first key / tap, the music playing
+  and following the run, a wall in a run, the HUD not moving under shake and lean, the lean easing back, red-black
+  space ten minutes in.
 - Serve and look at the browser console: `npx wrangler dev` (http://localhost:8787) or
   `python -m http.server 8000 -d public`.

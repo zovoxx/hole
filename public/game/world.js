@@ -16,8 +16,11 @@
 // or massive (put near your path every `massiveGap` s: pulls meteors and you, a swarm, a dust ring and the escape
 // sheet). Groups that come together (a big rock and its moons, a massive meteor's package) start beyond the far
 // edge, invisible, and fade in as they cross it, so nothing pops.
+// Contoo 3: walls (walls.js) put their rocks in this field (rock.wall); the inflow thins around each wall
+// (inflowScale), new rocks keep out of wall holes, and rocks passing very close are reported as near misses
+// (this.misses: the whoosh and a small kick).
 import * as THREE from 'three';
-import { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY } from './config.js';
+import { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY, SHAKE } from './config.js';
 import { createMeteorMesh, tintColor, tellAt, DustRing } from './meteors.js';
 import { knobs, linearKnob } from './difficulty.js';
 import { setupAttractor, addPull, playerPull, playerRange, orbit, escapeLayout, inHole } from './gravity.js';
@@ -130,6 +133,9 @@ export class MeteorField {
           spheres: shape.collisionSpheres?.length ? shape.collisionSpheres : [[0, 0, 0, shape.collisionRadius]],
           effR: effectiveRadius(shape.collisionSpheres, shape.collisionRadius),
           collisionRadius: shape.collisionRadius ?? 0.8,
+          // how far the collision spheres reach from the centre (rock units): what a rock can block at most
+          reach: Math.max(shape.collisionRadius ?? 0.8, ...(shape.collisionSpheres ?? [])
+            .map(([x, y, z, r]) => Math.hypot(x, y, z) + r)),
           sizeInRock: shape.sizeInRock ?? 0.85,
         });
       }
@@ -157,6 +163,9 @@ export class MeteorField {
     this.gridUsed = [];
     this.gridPool = [];
     this.events = [];        // explosions this frame: { p, s, visible, d } (main.js flashes and kicks)
+    this.misses = [];        // near misses this frame: { p (closest point), gap (m), s, speed } (whoosh, kick)
+    this.walls = null;       // the Walls (walls.js), set by it
+    this.inflowScale = 1;    // the walls thin the inflow around each wall (the calm)
     this.stats = { alive: 0, drawn: 0, target: 0, spawned: 0, explosions: 0, fragments: 0,
                    types: { rock: 0, decoy: 0, exploder: 0, big: 0, massive: 0, frag: 0 } };
   }
@@ -230,6 +239,8 @@ export class MeteorField {
     this.attractors.length = 0;
     this.massives.length = 0;
     this.events.length = 0;
+    this.misses.length = 0;
+    this.walls?.reset();
   }
 
   // Takes a rock out of the field now (tests).
@@ -243,8 +254,13 @@ export class MeteorField {
     this.massives = this.attractors.filter((a) => a.type === 'massive');
   }
 
-  release(r) {
+  // gone: it blew up (a wall rock then never comes back).
+  release(r, gone = false) {
     r.mu = 0;  // (the attractor lists drop it at the end of the frame)
+    if (r.wall) {
+      this.walls?.released(r, gone);
+      r.wall = null;
+    }
     if (r.ring) {
       r.ring.detach();
       r.ring = null;
@@ -281,13 +297,17 @@ export class MeteorField {
       axis: new THREE.Vector3(), tint: new THREE.Color(), spin: 0, fade: 1, test: false, type: 'rock',
       crack: 0, fuse: -1, farFuse: 0, phase: 0, seed: 0, mu: 0, range: 0, fieldPull: 0, pull: 0, ring: null, holes: null,
       host: null, far: 0, noGrav: false, age: 0, crackNow: 0, glow: 0, aimed: false, absorbed: false,
+      fadeRate: 0, fuseLen: 0, wall: null, entry: -1, missed: false,
     };
     r.gen = (r.gen ?? 0) + 1;  // a new life for a pooled object (members check their host's)
     r.fuse = -1;
     r.farFuse = 0;
     r.crack = r.mu = r.range = r.pull = r.far = r.age = r.crackNow = r.glow = 0;
     r.ring = r.holes = r.host = null;
-    r.noGrav = r.test = r.aimed = r.absorbed = false;
+    r.noGrav = r.test = r.aimed = r.absorbed = r.missed = false;
+    r.fadeRate = r.fuseLen = 0;   // 0 = the defaults (WORLD.fadeSeconds, EXPLODER.fuseSeconds)
+    r.wall = null;
+    r.entry = -1;
     r.seed = Math.random();
     r.phase = Math.random() * Math.PI * 2;
     r.tick = Math.floor(Math.random() * 3);  // which frame of three its weak gravity is applied on
@@ -309,7 +329,7 @@ export class MeteorField {
     r.fade = fade;
     const k = this.k;
     if (type === 'decoy') {
-      tintColor('decoy', 1 - (1 - Math.random()) ** k.decoyDeepBias, r.tint, k.decoyCloseness);
+      this.tintDecoy(r, 1 - (1 - Math.random()) ** k.decoyDeepBias);
     } else if (type === 'exploder' || type === 'frag') {
       tintColor('exploder', 0, r.tint);
       if (type === 'frag') r.tint.multiplyScalar(0.8);
@@ -323,6 +343,11 @@ export class MeteorField {
     this.rocks.push(r);
     this.stats.spawned++;
     return r;
+  }
+
+  // A decoy's colour at `shade` (0 pale ... 1 deep), with the deep end where the difficulty has moved it.
+  tintDecoy(r, shade) {
+    tintColor('decoy', shade, r.tint, this.k.decoyCloseness);
   }
 
   smallType({ exploders = true } = {}) {
@@ -375,7 +400,7 @@ export class MeteorField {
 
   inAnyHole(p, s) {
     for (const m of this.massives) if (m.holes && inHole(m, p, s)) return true;
-    return false;
+    return !!this.walls?.inHole(p, s);
   }
 
   makeAttractor(r, cfg) {
@@ -474,7 +499,7 @@ export class MeteorField {
     //    fadeBand down its line
     const kIn = Math.min(this.keepAngle, Math.PI / 2);
     if (flySpeed > 0) {
-      this.inflowCarry += this.density * flySpeed * Math.PI * (R * Math.sin(kIn)) ** 2 * dt;
+      this.inflowCarry += this.density * this.inflowScale * flySpeed * Math.PI * (R * Math.sin(kIn)) ** 2 * dt;
       while (this.inflowCarry >= 1) {
         this.inflowCarry -= 1;
         const theta = Math.asin(Math.sqrt(Math.random()) * Math.sin(kIn));
@@ -579,7 +604,9 @@ export class MeteorField {
     const atts = this.attractors;
     const blasts = [];
     const fuseAhead = (EXPLODER.fuseSeconds + EXPLODER.leadSeconds) * speed;
+    const missRange = SHAKE.nearMiss.range;
     this.events.length = 0;
+    this.misses.length = 0;
     const gravity = own > 0 && atts.length > 0;
     this.frameNo++;
     if (gravity) this.buildGrid(atts);
@@ -607,7 +634,7 @@ export class MeteorField {
       r.p.add(_o);
       if (r.spin) r.q.premultiply(_q.setFromAxisAngle(r.axis, r.spin * sdt));
       const d = r.p.length();
-      if (r.fade < 1 && d <= R) r.fade = Math.min(1, r.fade + dt / WORLD.fadeSeconds);
+      if (r.fade < 1 && d <= R) r.fade = Math.min(1, r.fade + dt * (r.fadeRate || 1 / WORLD.fadeSeconds));
       r.age += sdt;
       // drop: past the fog, out of the kept cone and out of view, or swallowed by the rock that pulls it.
       // A massive meteor stays while it still pulls you and is not behind you.
@@ -624,7 +651,7 @@ export class MeteorField {
       }
       if (r.type === 'exploder') {
         this.exploderStep(r, d, sdt, attract, fwd, frustum, fuseAhead);
-        if (r.fuse >= EXPLODER.fuseSeconds) {
+        if (r.fuse >= (r.fuseLen || EXPLODER.fuseSeconds)) {
           blasts.push(r);
           rocks[i] = rocks[rocks.length - 1];
           rocks.pop();
@@ -634,7 +661,20 @@ export class MeteorField {
         r.crackNow = 1.6 * Math.exp(-r.age / 0.7);  // hot broken faces, cooling
         r.glow = 1;
       }
-      if (collide && !hit && (r.test || !this.testOnly) && d < r.s + pr + _o.length() + 0.5 && this.hits(r, _o, pr)) hit = r;
+      const stepLen = _o.length();
+      if (collide && !hit && (r.test || !this.testOnly) && d < r.s + pr + stepLen + 0.5 && this.hits(r, _o, pr)) hit = r;
+      // a near miss: its closest pass this frame, within missRange of its surface (once per rock)
+      if (!r.missed && !attract && d < r.s + missRange + stepLen + 1 && stepLen > 1e-6) {
+        const t = THREE.MathUtils.clamp(r.p.dot(_o) / (stepLen * stepLen), 0, 1);
+        if (t > 0) {
+          _w.copy(r.p).addScaledVector(_o, -t);
+          const gap = _w.length() - r.s * 0.85;
+          if (gap < missRange) {
+            r.missed = true;
+            this.misses.push({ p: _w.clone(), gap: Math.max(0, gap), s: r.s, speed: stepLen / Math.max(dt, 1e-6) });
+          }
+        }
+      }
     }
     if (blasts.length) {
       const pv = _e.copy(move).divideScalar(Math.max(dt, 1e-6));  // your velocity
@@ -670,7 +710,7 @@ export class MeteorField {
     } else if (r.fuse >= 0) {
       r.fuse += sdt;
     }
-    const f = r.fuse >= 0 ? Math.min(1, r.fuse / E.fuseSeconds) : 0;
+    const f = r.fuse >= 0 ? Math.min(1, r.fuse / (r.fuseLen || E.fuseSeconds)) : 0;
     r.phase += 2 * Math.PI * (E.pulseHz[0] + (E.pulseHz[1] - E.pulseHz[0]) * f ** 1.5) * sdt;
     r.glow = 0.5 + 0.5 * Math.sin(r.phase);
     r.crackNow = E.crackRest * tellAt(d - r.s) + E.crackFuse * f * f;
@@ -706,7 +746,7 @@ export class MeteorField {
         this.stats.fragments++;
       }
     }
-    this.release(r);
+    this.release(r, true);
   }
 
   // Sets dir (unit) so a piece leaving r at speed u meets you (flying on at pv) plus a miss offset; returns the

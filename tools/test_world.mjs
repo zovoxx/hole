@@ -5,6 +5,8 @@
 // Contoo 2: meteor types and colours, the tell, fuses (where they light and blow up), explosion pieces (aimed,
 // dodgeable, pulled by gravity), orbits, the massive meteor's pull (drift slowly at the edge, hold against it
 // halfway in, do nothing and you hit it) and the escape sheet (clear holes; steering through one gets you out).
+// Contoo 3: the wall knobs and rhythm, the warning, holes never on your path, every hole made by a pilot that
+// reacts late, wall exploders, walls next to a massive meteor, the calm, near misses, the depth of space.
 // Usage: node tools/test_world.mjs   (Node 20.6+; uses the vendored three.js, no npm packages)
 import { register } from 'node:module';
 import fs from 'node:fs';
@@ -22,8 +24,9 @@ const { createFlight, stepFlight } = await game('flight.js');
 const { knobs } = await game('difficulty.js');
 const { MeteorField } = await game('world.js');
 const { tellAt, tintColor } = await game('meteors.js');
-const { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY } = await game('config.js');
+const { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY, WALL } = await game('config.js');
 const { playerRange, circularSpeed } = await game('gravity.js');
+const { Walls, pilot } = await game('walls.js');
 
 let failures = 0;
 function check(ok, what, detail = '') {
@@ -151,7 +154,8 @@ for (const [label, opts] of [['straight', {}], ['turning 35°/s', { turn: 35 }],
 {
   const r = simulate({ seconds: 1210, hits: true, gap: 8 });
   const seen = 1200 / Math.max(1, r.hitCount);
-  check(seen > 8 * 0.83 && seen < 8 * 1.2, 'flying straight, a rock is in your path about every pathGap seconds',
+  // (~150 rocks a run: runs of the same code measure 6.6–9.4 s, so ±25%)
+  check(seen > 8 * 0.78 && seen < 8 * 1.25, 'flying straight, a rock is in your path about every pathGap seconds',
     `one per ${seen.toFixed(2)} s for a planned 8 s (${r.hitCount} rocks)`);
 }
 
@@ -159,7 +163,7 @@ for (const [label, opts] of [['straight', {}], ['turning 35°/s', { turn: 35 }],
 
 // An empty stage (no field rocks, no automatic massive meteors) and a pilot that flies like main.js: the flight
 // model, the pull of massive meteors (extra turn and drift) and the field update.
-function stage({ speed = 40, aspect = 16 / 9 } = {}) {
+function stage({ speed = 40, aspect = 16 / 9, t = 0, walls = false } = {}) {
   const field = new MeteorField(new THREE.Scene(), { small: manifest.meteors.small.map(shape),
     big: manifest.meteors.big.map(shape), fragments: manifest.meteors.fragments.map(shape) });
   const cam = new THREE.PerspectiveCamera(60, aspect, 0.3, 1400);
@@ -168,7 +172,9 @@ function stage({ speed = 40, aspect = 16 / 9 } = {}) {
   field.autoMassive = false;
   field.setDensity(speed, 8);
   const p = { field, f: createFlight(), q: new THREE.Quaternion(), fwd: new THREE.Vector3(0, 0, -1),
-              frustum: new THREE.Frustum(), drift: new THREE.Vector3(), pull: { gx: 0, gy: 0, strength: 0 }, speed };
+              frustum: new THREE.Frustum(), drift: new THREE.Vector3(), pull: { gx: 0, gy: 0, strength: 0 }, speed,
+              t, k: knobs(t), walls: walls ? new Walls(field) : null, spawnWalls: false };
+  field.k = p.k;
   const pv = new THREE.Matrix4();
   const move = new THREE.Vector3();
   const driftT = new THREE.Vector3();
@@ -195,8 +201,17 @@ function stage({ speed = 40, aspect = 16 / 9 } = {}) {
     }
     p.view();
     move.copy(p.fwd).multiplyScalar(p.speed * dt).addScaledVector(p.drift, dt);
-    return field.update(dt, { fwd: p.fwd, frustum: p.frustum, move, speed: p.speed });
+    const hit = field.update(dt, { fwd: p.fwd, frustum: p.frustum, move, speed: p.speed });
+    if (p.walls) {
+      p.t += dt;
+      p.walls.update(dt, { runTime: p.t, k: p.k, speed: p.speed, q: p.q, flight: p.f, drift: p.drift, fwd: p.fwd,
+                           frustum: p.frustum, move, spawn: p.spawnWalls });
+    }
+    return hit;
   };
+  // a wall now, from the current state (opts as Walls.spawn)
+  p.wall = (opts = {}) => p.walls.spawn({ runTime: p.t, k: p.k, speed: p.speed, q: p.q, flight: p.f, drift: p.drift,
+                                           fwd: p.fwd, frustum: p.frustum }, opts);
   // the circle moves toward c* (|c*| <= 1) at its constant speed
   p.circleTo = (cx, cy) => {
     const dx = cx - p.f.cx;
@@ -323,7 +338,8 @@ function fuseRun(speed, { dist = 300, side = 0 } = {}) {
     still += trial(false);
     dodged += trial(true);
   }
-  check(still / N > 0.25 && dodged / N < 0.12 && dodged < still / 2,
+  // (300 trials: 32–38% hit flying on, 8% turning away; 60 trials scatter ±6% / ±3.5%)
+  check(still / N > 0.2 && dodged / N < 0.16 && dodged < still / 2,
     'pieces fly at you: scary if you do nothing, dodgeable if you steer', `hit ${still}/${N} flying on, ${dodged}/${N} turning away after 0.3 s`);
 }
 
@@ -449,6 +465,199 @@ console.log('gravity');
   }
   check(clear === N && away === N, 'escape sheet: every hole is clear and on the side away from the massive meteor',
     `${clear}/${N} clear, ${away}/${N} on the escape side`);
+}
+
+// ---- Contoo 3: pressure
+
+console.log('walls');
+{
+  let mono = true;
+  let prev = knobs(0);
+  for (let t = 1; t <= 1800; t++) {
+    const k = knobs(t);
+    if (k.wallGap > prev.wallGap || k.wallWarn > prev.wallWarn || k.wallExploders < prev.wallExploders
+        || k.wallCombo < prev.wallCombo || k.deep < prev.deep) mono = false;
+    prev = k;
+  }
+  const [a, b, c, d] = [0, 60, 180, 600].map((t) => knobs(t));
+  check(mono && Math.abs(a.wallWarn - 4) < 0.01 && Math.abs(c.wallWarn - 2) < 0.15 && d.wallWarn === 2
+        && Math.abs(a.wallGap - 15) < 0.01 && d.wallGap === 6,
+  'one curve: warning 4 s -> 2 s after a few minutes, a wall every 15 s -> 6 s, combos and depth only grow',
+  `warn ${a.wallWarn.toFixed(1)} / ${b.wallWarn.toFixed(1)} / ${c.wallWarn.toFixed(1)} / ${d.wallWarn.toFixed(1)} s, every ${a.wallGap.toFixed(1)} / ${b.wallGap.toFixed(1)} / ${c.wallGap.toFixed(1)} / ${d.wallGap.toFixed(1)} s at 0 / 1 / 3 / 10 min`);
+  check(a.wallExploders === 0 && a.wallCombo === 0 && knobs(30).wallExploders === 0 && d.wallExploders > 0.02 && d.wallCombo > 0.3,
+    'combos (exploders in walls, walls next to massive meteors) only later in a run',
+    `exploders ${(b.wallExploders * 100).toFixed(1)}% at 1 min, ${(d.wallExploders * 100).toFixed(1)}% at 10 min; combo ${(d.wallCombo * 100).toFixed(0)}%`);
+}
+{
+  // the rhythm and the warning over a simulated run (an empty field, flying straight through everything)
+  const p = stage({ walls: true });
+  p.field.testOnly = true;
+  p.spawnWalls = true;
+  p.walls.begin(p.k, 0);
+  const spawned = [];
+  let n = 0;
+  for (let i = 0; i < 60 * 330; i++) {
+    p.k = knobs(p.t);
+    p.speed = p.k.speed;
+    p.field.k = p.k;
+    p.step();
+    if (p.walls.stats.spawned > n) {
+      n = p.walls.stats.spawned;
+      const w = p.walls.active[p.walls.active.length - 1];
+      spawned.push({ t: p.t, warn: w.warn, L: w.L, speed: p.speed, w, reached: null, fade0: w.rocks.filter((r) => r && r.fade > 0).length });
+    }
+    for (const s of spawned) if (s.reached === null && s.w.center.length() >= s.L) s.reached = p.t - s.t;
+  }
+  const gaps = spawned.slice(1).map((s, i) => s.t - spawned[i].t);
+  const early = gaps.slice(0, 1);
+  const late = gaps.filter((g, i) => spawned[i].t > 240);
+  const onCurve = gaps.every((g, i) => g >= knobs(spawned[i].t).wallGap * WALL.gapJitter[0] - 0.05
+                                     && g <= knobs(spawned[i].t).wallGap * WALL.gapJitter[1] + 1);
+  check(spawned[0].t > 12 && spawned[0].t < 18 && early.every((g) => g > 10.5 && g < 16) && late.length > 5
+        && late.every((g) => g >= 5 && g < 7.5) && onCurve,
+    'walls come about every 15 s early and every 6 s late (the curve, ±15%)', `first at ${spawned[0].t.toFixed(1)} s, then ${gaps.slice(0, 4).map((g) => g.toFixed(1)).join(', ')} ... late ${late.slice(0, 5).map((g) => g.toFixed(1)).join(', ')} s (${spawned.length} walls in 5.5 min, ${p.walls.stats.skipped} skipped)`);
+  const first = spawned[0];
+  const last = spawned.filter((s) => s.reached !== null).pop();
+  check(first.warn > 3.4 && Math.abs(first.reached - first.warn) < 0.15 && Math.abs(last.reached - 2) < 0.15 && first.fade0 === 0,
+    'a wall appears (out of the murk, faded in) about 4 s ahead early and 2 s ahead late',
+    `first ${first.L.toFixed(0)} m ahead, reached after ${first.reached.toFixed(2)} s; at ${last.t.toFixed(0)} s ${last.L.toFixed(0)} m ahead, reached after ${last.reached.toFixed(2)} s`);
+}
+// A wall from a random flight state (straight or turning), flown by the real field and the real wall rocks.
+// Returns 'wall' (hit a wall rock), 'through' (crossed the wall) or 'none' (no wall placed).
+function wallRun(t, { turning = false, steer = true, exploders = true } = {}) {
+  const k = { ...knobs(t), ...(exploders ? {} : { wallExploders: 0 }) };   // (an exploder blows its own gap)
+  const p = stage({ speed: k.speed, t, walls: true });
+  p.k = k;
+  p.field.testOnly = false;
+  if (turning) {
+    p.f.cx = (Math.random() * 2 - 1) * 0.4;
+    p.f.cy = (Math.random() * 2 - 1) * 0.4;
+    p.f.wx = (Math.random() * 2 - 1) * 40;
+    p.f.wy = (Math.random() * 2 - 1) * 40;
+  }
+  const w = p.wall();
+  if (!w) return { out: 'none' };
+  const hole = w.holes[Math.floor(Math.random() * w.holes.length)];
+  const target = new THREE.Vector3();
+  let crossed = false;
+  for (let i = 0; i < 60 * (w.warn * 2.5 + 2); i++) {
+    let held = { x: 0, y: 0 };
+    if (steer && i * dt >= WALL.reaction) {
+      target.copy(w.center).addScaledVector(hole.dir, w.L + 30);
+      held = pilot(p.f, p.q, target, p.pull, dt);
+    }
+    const hit = p.step(held);
+    if (hit) return { out: hit.wall ? 'wall' : 'other', w };
+    if (w.center.length() > w.L + WALL.depth + WALL.size[1] + 5) { crossed = true; break; }
+  }
+  return { out: crossed ? 'through' : 'circling', w, hole };
+}
+{
+  // (wall exploders are left out here: they blow gaps and throw pieces, tested below)
+  for (const t of [0, 60, 600]) {
+    const N = 25;
+    const idle = { wall: 0, through: 0, none: 0, other: 0, circling: 0, massive: 0 };
+    const steer = { wall: 0, through: 0, none: 0, other: 0, circling: 0, massive: 0 };
+    for (let i = 0; i < 40; i++) idle[wallRun(t, { steer: false, exploders: false }).out]++;  // straight on
+    for (let i = 0; i < N; i++) steer[wallRun(t, { turning: i % 2 === 1, exploders: false }).out]++;
+    const reached = idle.wall + idle.through;
+    const placed = N - steer.none;
+    check(idle.through <= Math.max(2, reached * 0.08) && reached >= 30,
+      `${t / 60} min: flying straight on, you hit the wall (no hole on your path; the curtain is ~98% solid)`,
+      `${idle.wall} hit it, ${idle.through} slipped through a gap, ${idle.none}/40 not placed at once (it retries)`);
+    check(steer.through >= placed * 0.95 && placed >= N * 0.75,
+      `${t / 60} min: every hole is made by a pilot steering ${WALL.reaction} s after the wall appears (straight and turning)`,
+      `${steer.through}/${placed} through, ${steer.wall} hit the wall, ${steer.circling} circling, ${steer.none} not placed at once`);
+  }
+}
+{
+  // combos: a wall next to a massive meteor. A massive meteor comes as in a run (far ahead, near your path, with
+  // its swarm and escape sheet); you fly on, holding away from its pull, and the wall is asked for every 0.25 s
+  // until one passes its checks (with the pull). Then the pilot steers for its hole and, once through, holds away
+  // until the pull lets go.
+  const comboRun = () => {
+    const k = knobs(600);
+    const p = stage({ speed: k.speed, t: 600, walls: true });
+    p.field.testOnly = false;
+    const m = p.field.spawnMassive(p.fwd, {});
+    m.pull = k.pull;
+    const away = () => {
+      const g = Math.hypot(p.pull.gx, p.pull.gy);
+      return p.pull.strength > 0.02 && g > 1e-6 ? p.circleTo(-p.pull.gx / g, -p.pull.gy / g) : p.circleTo(0, 0);
+    };
+    let w = null;
+    let hole = null;
+    const target = new THREE.Vector3();
+    let since = 0;
+    for (let i = 0; i < 60 * 16; i++) {
+      if (!w && i % 15 === 0 && m.p.length() < 330) {
+        w = p.wall({ combo: true });
+        if (w && !w.combo) w = null;   // (only walls next to it count here)
+        if (w) hole = w.holes[0];
+      }
+      let held = away();
+      if (w) {
+        since += dt;
+        const through = w.center.length() > w.L + WALL.depth + WALL.size[1] + 5;
+        if (!through && since >= WALL.reaction) held = pilot(p.f, p.q, target.copy(w.center).addScaledVector(hole.dir, w.L + 30), p.pull, dt);
+        if (through && !p.field.rocks.includes(m) && m.p.dot(p.fwd) < 0) return 'out';
+      }
+      const hit = p.step(held);
+      if (hit) return w ? (hit === m ? 'massive' : hit.wall ? 'wall' : hit.noGrav ? 'sheet' : hit.host === m ? 'swarm' : 'other') : 'before';
+    }
+    return w ? 'out' : 'none';
+  };
+  const res = { out: 0, wall: 0, massive: 0, sheet: 0, swarm: 0, other: 0, before: 0, none: 0 };
+  for (let i = 0; i < 30; i++) res[comboRun()]++;
+  const placed = 30 - res.none - res.before;
+  check(placed >= 12 && res.out >= placed * 0.8,
+    'a wall next to a massive meteor (holes away from it): you can make its hole against the pull and get away',
+    `${res.out}/${placed} through and away; hit wall ${res.wall}, massive ${res.massive}, its escape sheet ${res.sheet}, swarm ${res.swarm}, other ${res.other}; ${res.none} times no combo wall, ${res.before} hit before`);
+  const p = stage({ speed: knobs(600).speed, t: 600, walls: true });
+  let w = null;
+  for (let i = 0; i < 5 && !w; i++) w = p.wall();
+  const ex = w.rocks.filter((r) => r && r.type === 'exploder');
+  const nearHole = ex.filter((r) => w.holes.some((h) => r.p.clone().sub(w.center).angleTo(h.dir) * w.L < h.r * 2.1));
+  let lit = 0;
+  let boomAt = null;
+  for (let i = 0; i < 60 * 2.5 && boomAt === null; i++) {
+    p.step();
+    lit = Math.max(lit, w.rocks.filter((r) => r && r.type === 'exploder' && r.fuse >= 0).length);
+    if (p.field.events.length) boomAt = (i + 1) * dt;
+  }
+  check(ex.length > 3 && nearHole.length === 0 && lit > 0 && boomAt !== null && w.warn - boomAt > 1,
+    'late walls hold exploders (never beside a hole); near your path they light as the wall appears and blow up >1 s before you get there',
+    `${ex.length} exploders in view of ${w.alive} rocks, ${lit} lit, first boom ${boomAt?.toFixed(2)} s after it appeared, ${(w.warn - boomAt).toFixed(2)} s before the wall`);
+}
+{
+  // the calm: the inflow thins around the moment you reach a wall
+  const p = stage({ walls: true });
+  p.walls.planned = [20];
+  const R = WORLD.radius - WORLD.fadeBand / 2;
+  const at = (arrive) => p.walls.calmAt(arrive - R / 40, 40);   // inflow that reaches you at `arrive`
+  check(at(10) === 1 && at(19.7) < 0.5 && at(21) < 0.5 && at(25) === 1 && at(17.5) > 0.95,
+    'the field thins just before and after each wall (a clear approach, a short calm)',
+    `density ×${at(17.5).toFixed(2)} 2.5 s before, ×${at(19.7).toFixed(2)} at it, ×${at(21).toFixed(2)} 1 s after, ×${at(25).toFixed(2)} 5 s after`);
+}
+
+console.log('near misses');
+{
+  const miss = (side) => {
+    const p = stage();
+    p.field.testOnly = false;
+    p.field.place(p.fwd, { type: 'rock', dist: 60, s: 4, side: (Math.atan((side + 4 * 0.85) / 60) * 180) / Math.PI, test: true });
+    let events = 0;
+    let hit = false;
+    for (let i = 0; i < 120; i++) {
+      if (p.step()) hit = true;
+      events += p.field.misses.length;
+    }
+    return { events, hit };
+  };
+  const close = miss(2.5);
+  const far = miss(15);
+  check(close.events === 1 && !close.hit && far.events === 0, 'a rock passing within a few metres is one near miss; far ones are none',
+    `2.5 m: ${close.events} event(s), 15 m: ${far.events}`);
 }
 
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');

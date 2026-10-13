@@ -24,5 +24,18 @@ export function knobs(t, c = DIFFICULTY) {
     decoyDeepBias: linearKnob(c.decoyDeepBias, D),
     massiveGap: geometricKnob(c.massiveGap, D),
     pull: Math.min(c.pull[1], linearKnob(c.pull, D)),  // capped: holding against a pull must always win
+    // Contoo 3: walls (how often, how much warning, holes, combos) and how deep space looks (0 = blue-black,
+    // thin dust ... 1 = red-black, thick dust)
+    wallGap: Math.max(c.wallGapMin, geometricKnob(c.wallGap, D ** c.wallEase)),
+    wallWarn: Math.max(c.wallWarnMin, linearKnob(c.wallWarn, D ** c.wallEase)),
+    wallTwoHoles: clamp01(linearKnob(c.wallTwoHoles, D)),
+    wallExploders: clamp01(linearKnob(c.wallExploders, D)),
+    wallCombo: clamp01(linearKnob(c.wallCombo, D)),
+    deep: smooth01((D - c.deep[0]) / (c.deep[1] - c.deep[0])),
   };
 }
+
+const smooth01 = (x) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};

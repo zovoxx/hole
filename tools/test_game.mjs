@@ -9,6 +9,10 @@
 //     screen never zooms (visualViewport.scale stays 1)
 //   - Contoo 2 (desktop): the field has decoys, exploders and big rocks; nothing blows up behind the start
 //     screen; an exploder ahead lights its fuse and blows up (flash, pieces); a massive meteor pulls you
+//   - Contoo 3: the settings panel (gear; music and sound volume, the debug read-out off by default; presses on it
+//     never start a run; saved); audio unlocks on the first key / tap and the music plays and follows the run;
+//     walls come in a run; shakes, the lean, the dark edge and the stretch move the view but never the HUD, and
+//     the lean eases back; space turns red-black late in a run
 // Usage: NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]
 // Needs Playwright (npm i -g playwright, or npx playwright install chromium on a laptop).
 import http from 'node:http';
@@ -104,6 +108,39 @@ async function desktop(browser, base) {
   const calm = await page.evaluate(() => ({ booms: hole.field.stats.explosions, types: { ...hole.field.stats.types } }));
   check(calm.booms === 0 && calm.types.decoy > 10 && calm.types.big > 3,
     'the start screen shows decoys and big rocks, and nothing blows up behind it', JSON.stringify(calm));
+  // settings: the debug read-out is off by default; the gear opens the panel; nothing on it starts the run
+  const dbg0 = await page.evaluate(() => ({ el: !!document.getElementById('debug') && !document.getElementById('debug').hidden,
+                                            setting: hole.settings.debug, saved: localStorage.getItem('hole.settings') }));
+  check(!dbg0.el && dbg0.setting === false && dbg0.saved === null, 'the debug read-out is off by default (a setting now)', JSON.stringify(dbg0));
+  await page.click('#start .gear');
+  const panel1 = await page.evaluate(() => ({ open: !document.getElementById('settings').hidden, mode: hole.mode }));
+  await page.click('#settings .stepper[data-key="music"] [data-d="1"]');
+  await page.click('#settings .stepper[data-key="sound"] [data-d="-1"]');
+  await page.click('#settings .stepper[data-key="sound"] [data-d="-1"]');
+  await page.click('#settings .toggle');
+  await page.click('#settings .card h2');   // a press on the card itself
+  await page.keyboard.press('KeyW');        // a key while the panel is open
+  const panel2 = await page.evaluate(() => ({
+    mode: hole.mode, music: hole.settings.music, sound: hole.settings.sound, debug: hole.settings.debug,
+    shown: !!document.getElementById('debug') && !document.getElementById('debug').hidden,
+    text: document.querySelector('#settings .stepper[data-key="sound"] output').textContent,
+    saved: JSON.parse(localStorage.getItem('hole.settings') ?? 'null'),
+  }));
+  check(panel1.open && panel2.mode === 'start' && panel2.music === 9 && panel2.sound === 6 && panel2.text === '60%'
+        && panel2.debug && panel2.shown && panel2.saved?.music === 9 && panel2.saved?.debug === true,
+  'the gear opens the settings; volume steps and the debug switch work and are saved; presses there never start the run',
+  JSON.stringify(panel2));
+  await page.click('#settings .done');
+  await page.keyboard.press('Escape');
+  const panel3 = await page.evaluate(() => ({ open: !document.getElementById('settings').hidden, mode: hole.mode }));
+  check(!panel3.open && panel3.mode === 'start', 'Done closes the settings', JSON.stringify(panel3));
+  await page.click('#start .gear');
+  await page.click('#settings .toggle');    // debug read-out off again
+  await page.mouse.click(10, 700);          // the dim area around the card closes it
+  const panel4 = await page.evaluate(() => ({ open: !document.getElementById('settings').hidden, mode: hole.mode,
+    shown: !document.getElementById('debug').hidden }));
+  check(!panel4.open && panel4.mode === 'start' && !panel4.shown, 'a click beside the card closes it; the read-out hides again', JSON.stringify(panel4));
+  const audio0 = await page.evaluate(() => hole.sound.state.context);
   await page.click('#start .fs');
   await sleep(300);
   const fs1 = await page.evaluate(() => ({ mode: hole.mode, fs: !!document.fullscreenElement }));
@@ -112,6 +149,8 @@ async function desktop(browser, base) {
   await page.keyboard.press('Space');
   g = await game(page);
   check(g.mode === 'run', 'a key starts the run');
+  const audio1 = await page.evaluate(() => hole.sound.state);
+  check(audio1.context === 'running', 'audio unlocks on the first press', `${audio0} -> ${audio1.context}`);
 
   // circle: constant speed while held, stays where it is left
   await page.keyboard.down('KeyD');
@@ -219,6 +258,68 @@ async function desktop(browser, base) {
   });
   check(pulled.strength > 0.1 && pulled.turn > 5 && pulled.drift > 0.3, 'a massive meteor near you turns you toward it and drags you sideways',
     `${pulled.turn.toFixed(0)} °/s, drift ${pulled.drift.toFixed(1)} m/s`);
+  // Contoo 3: camera effects move the view, never the HUD; the lean eases back
+  const rects = () => page.evaluate(() => ['cross', 'timer', 'hud'].map((id) => {   // (the circle moves with input)
+    const r = document.getElementById(id).getBoundingClientRect();
+    return [r.left, r.top, r.width, r.height].map((x) => Math.round(x * 100) / 100).join(',');
+  }).join(' | '));
+  const hud0 = await rects();
+  const shaken = await page.evaluate(() => {
+    hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
+    const m = hole.spawnMassive({ dist: 75, offAxis: 40, phi: 0.2, s: 24, still: true });
+    hole.advance(1 / 60);
+    const g = Math.hypot(hole.pull.gx, hole.pull.gy) || 1;   // hold against it
+    hole.flight.cx = (-hole.pull.gx / g) * 0.6;
+    hole.flight.cy = (-hole.pull.gy / g) * 0.6;
+    hole.place({ type: 'exploder', dist: 60, s: 6, side: -8, fuse: true, test: false });
+    let maxLean = 0;
+    let maxShake = 0;
+    for (let i = 0; i < 90; i++) {
+      hole.advance(1 / 60);
+      maxLean = Math.max(maxLean, Math.abs(hole.fx.lean));
+      maxShake = Math.max(maxShake, Math.hypot(hole.fx.kickX, hole.fx.kickY));
+    }
+    const view = hole.camera.quaternion.angleTo(hole.q);
+    const edge = getComputedStyle(document.getElementById('lean-edge')).opacity;
+    hole.field.remove(m);
+    for (const r of [...hole.field.rocks]) if (r.host === m || r.noGrav) hole.field.remove(r);
+    hole.flight.cx = hole.flight.cy = 0;
+    return { maxLean: maxLean * 180 / Math.PI, maxShake: maxShake * 180 / Math.PI, view: view * 180 / Math.PI, edge,
+             side: hole.fx.side.amount, booms: hole.field.stats.explosions };
+  });
+  const hud1 = await rects();
+  check(shaken.maxLean > 3 && shaken.maxShake > 0.3 && shaken.maxShake <= 4.5 + 1e-6 && shaken.edge === '1' && shaken.view > 0.5,
+    'a pull and a blast: the view rumbles, leans toward the meteor (darker edge, stretch) and kicks, capped',
+    `lean up to ${shaken.maxLean.toFixed(1)}°, shake up to ${shaken.maxShake.toFixed(2)}°, view off the heading ${shaken.view.toFixed(1)}°, edge side ${shaken.side.toFixed(2)}`);
+  check(hud0 === hud1, 'the cross, circle, timer and HUD never move with the camera', hud1);
+  const eased = await page.evaluate(() => { hole.advance(4); return { lean: hole.fx.lean * 180 / Math.PI, side: hole.fx.side.amount }; });
+  check(Math.abs(eased.lean) < 1 && eased.side < 0.1, 'the lean eases back once you are free', `${eased.lean.toFixed(2)}°, edge ${eased.side.toFixed(2)}`);
+  // walls come in a run; space goes red-black late in a run
+  const wallInfo = await page.evaluate(() => {
+    const before = hole.walls.stats.spawned;
+    const next = hole.walls.nextAt - hole.time;
+    hole.advance(Math.max(0, next) + 0.5);
+    const w = hole.walls.active[hole.walls.active.length - 1];
+    return { next, spawned: hole.walls.stats.spawned - before, rocks: w?.alive ?? 0, holes: w?.holes.length ?? 0, mode: hole.mode,
+             warn: w?.warn, L: w?.L };
+  });
+  check(wallInfo.spawned >= 1 && wallInfo.rocks > 100 && wallInfo.holes >= 1, 'a wall comes in the run',
+    `after ${wallInfo.next.toFixed(1)} s: ${wallInfo.rocks} rocks, ${wallInfo.holes} hole(s), ${wallInfo.L?.toFixed(0)} m ahead (${wallInfo.warn?.toFixed(1)} s)`);
+  const deep = await page.evaluate(() => {
+    const c0 = hole.scene.background.clone();
+    hole.setRunTime(600);
+    hole.advance(0.1);
+    const c1 = hole.scene.background;
+    return { deep: hole.deep, before: c0.getHexString(), after: c1.getHexString(), redder: c1.r > c1.b && c0.r < c0.b,
+             fog: hole.scene.fog.color.equals(c1), speed: hole.speed };
+  });
+  check(deep.deep > 0.9 && deep.redder && deep.fog, 'ten minutes in, space is red-black (fog the same colour)',
+    `#${deep.before} -> #${deep.after}, deep ${deep.deep.toFixed(2)}, ${deep.speed.toFixed(0)} m/s`);
+  // the music: loaded in the background, playing, following the run time
+  const music = await page.waitForFunction(() => hole.sound.state.playing, null, { timeout: 60000 }).then(() => true, () => false);
+  const ms = await page.evaluate(() => { hole.setRunTime(150); hole.advance(0.1); return hole.sound.state; });
+  check(music && ms.playing && Math.abs(ms.intensity - (1 + 3 * 150 / 270)) < 0.1,
+    'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
   // the real clock runs too (after a screenshot the software GPU first works off its backlog)
@@ -272,9 +373,25 @@ async function mobile(browser, base, name, device, landscape) {
     check(m.mode === 'start', 'tapping the fullscreen button does not start the run', `fullscreen ${m.fs}`);
     if (m.fs) await page.evaluate(() => document.exitFullscreen());
   }
+  // settings by touch: the gear opens it, a tap on a step changes it, a tap beside the card closes it, no run
+  const tapAt = async (pt) => {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ ...pt, id: 1 }] });
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await sleep(60);
+  };
+  const music0 = await page.evaluate(() => hole.settings.music);
+  await tapAt(await center(page, '#start .gear'));
+  const opened = await page.evaluate(() => !document.getElementById('settings').hidden);
+  await tapAt(await center(page, '#settings .stepper[data-key="music"] [data-d="-1"]'));
+  await tapAt({ x: 6, y: vh - 6 });
+  const st = await page.evaluate(() => ({ open: !document.getElementById('settings').hidden, mode: hole.mode, music: hole.settings.music }));
+  check(opened && !st.open && st.mode === 'start' && st.music === music0 - 1, 'settings by touch: open, one step down, closed, no run started',
+    JSON.stringify(st));
   await doubleTap(cdp, vw * 0.5, vh * 0.3);  // a (double) tap on the start screen starts and never zooms
   let g = await game(page);
   check(g.mode === 'run', 'a tap starts the run');
+  const ctxState = await page.evaluate(() => hole.sound.state.context);
+  check(ctxState === 'running', 'audio unlocks on the first tap (touchend)', ctxState);
   // pads: inside the screen, apart from each other, big enough for thumbs
   const pads = await page.evaluate(() => ['btn-left', 'btn-right', 'btn-up', 'btn-down'].map((id) => {
     const r = document.getElementById(id).getBoundingClientRect();

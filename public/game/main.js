@@ -1,26 +1,36 @@
 // Hole: boot, game states (loading -> start -> run -> hit -> over -> run ...) and the main loop.
 import * as THREE from 'three';
-import { SPACE_COLOR, WORLD, CAMERA, LIGHTS, RUN, GRAVITY } from './config.js';
+import { SPACE_COLOR, WORLD, CAMERA, LIGHTS, RUN, GRAVITY, SHAKE, DEEP } from './config.js';
 import { pickAssetSet, pixelRatio, hasTouch } from './device.js';
 import { loadManifest, loadMeteors } from './loader.js';
 import { loadSprites } from './sprites.js';
-import { createFlight, resetFlight, stepFlight } from './flight.js';
+import { createFlight, resetFlight, stepFlight, strain } from './flight.js';
 import { knobs } from './difficulty.js';
 import { MeteorField } from './world.js';
+import { Walls } from './walls.js';
 import { createStars, Motes, Murk } from './space.js';
 import { Fx } from './fx.js';
 import { Input } from './input.js';
 import { UI, loadBest, saveBest } from './ui.js';
+import { loadSettings, saveSettings } from './settings.js';
+import { GameSound } from './sound.js';
 
 const DEG = Math.PI / 180;
 const params = new URLSearchParams(window.location.search);
-const DEBUG = params.has('debug');
+const DEBUG = params.has('debug');   // the test handle (window.hole); the read-out is a setting
 const set = pickAssetSet();
 const touch = hasTouch() || params.get('touch') === '1';
 
+const settings = loadSettings();
 const ui = new UI({ touch });
 const input = new Input(ui.buttons, onPress);
 input.touchEnabled = touch;
+const sound = new GameSound(set, settings);
+ui.setupSettings(settings, (s) => {
+  saveSettings(s);
+  sound.applyVolumes();
+  showDebug(s.debug);
+});
 
 // ---- renderer, scene, camera (the camera never uses lookAt: orientation is a quaternion turned by pitch/yaw)
 const canvas = document.getElementById('view');
@@ -31,10 +41,13 @@ renderer.setPixelRatio(pixelRatio(set));
 // colours: fogged rocks stood out as dark or dithered silhouettes.)
 renderer.toneMapping = THREE.NoToneMapping;
 const scene = new THREE.Scene();
+const spaceColors = [new THREE.Color(SPACE_COLOR), new THREE.Color(DEEP.space)];  // blue-black -> red-black
 scene.background = new THREE.Color(SPACE_COLOR);
 scene.fog = new THREE.FogExp2(SPACE_COLOR, Math.sqrt(-Math.log(WORLD.fogAtRadius)) / WORLD.radius);
 const camera = new THREE.PerspectiveCamera(CAMERA.fovShort, 1, CAMERA.near, CAMERA.far);
 scene.add(camera);
+const projBase = new THREE.Matrix4();     // the projection without the stretch (for the frustum)
+const stretchM = new THREE.Matrix4();
 
 // Lights ride with the camera: rocks look the same whichever way you face (no fixed up anywhere).
 camera.add(new THREE.AmbientLight(LIGHTS.ambient.color, LIGHTS.ambient.intensity));
@@ -53,7 +66,8 @@ scene.add(motes.points);
 const flight = createFlight();
 const q = new THREE.Quaternion();        // where the player faces
 const kick = new THREE.Quaternion();     // visual camera offset (hit kick); never touches the HUD
-const fxKick = new THREE.Quaternion();   // explosion kicks (fx.js)
+const fxKick = new THREE.Quaternion();   // the shake stack (fx.js)
+const leanQ = new THREE.Quaternion();    // the lean toward a massive meteor (a roll, fx.js)
 const drift = new THREE.Vector3();       // sideways drift from a massive meteor's pull (world m/s)
 const driftTarget = new THREE.Vector3();
 const fwd = new THREE.Vector3(0, 0, -1);
@@ -62,9 +76,12 @@ const frustum = new THREE.Frustum();
 const projView = new THREE.Matrix4();
 const kickAxis = new THREE.Vector3();
 const dq = new THREE.Quaternion();
+const qInv = new THREE.Quaternion();
 const axis = new THREE.Vector3();
+const local = new THREE.Vector3();
 
 let field = null;
+let walls = null;
 let murk = null;
 let fx = null;
 let pull = { gx: 0, gy: 0, strength: 0 };
@@ -72,6 +89,8 @@ let mode = 'loading';
 let runTime = 0;       // seconds survived this run (the timer)
 let modeTime = 0;      // seconds since the mode began
 let speed = 40;
+let k = knobs(0);      // the difficulty now
+let deep = -1;         // how deep space looks (knobs().deep), applied when it changes
 let best = loadBest();
 let lastHit = null;
 let openT = 1;         // view opening after a restart (0 -> 1)
@@ -101,24 +120,28 @@ async function boot() {
     loadSprites(manifest, set, progress('sprites')),
   ]);
   field = new MeteorField(scene, shapes, { set, fogDensity: scene.fog.density });
+  walls = new Walls(field);
   murk = new Murk(scene, sprites);
   fx = new Fx(scene, sprites.flash, scene.fog.density);
   resize();
   updateCamera();
   speed = WORLD.attractSpeed;
-  field.setDifficulty(knobs(0));
-  field.setDensity(speed, knobs(0).pathGap);
+  field.setDifficulty(k);
+  field.setDensity(speed, k.pathGap);
   field.reset(fwd, frustum, { speed, attract: true });
   murk.reset(fwd, frustum, field.cosKeep);
+  setDeep(0);
   renderer.compile(scene, camera);
   ui.setBest(best);
+  showDebug(settings.debug);
   setMode('start');
   renderer.setAnimationLoop(frame);
+  sound.load(manifest);  // the music decodes in the background; the game doesn't wait for it
 }
 
-// ---- presses: start, restart
+// ---- presses: start, restart (never while the settings are open)
 function onPress(e) {
-  if (e.target?.closest?.('.fs')) return;
+  if (e.target?.closest?.('.fs, .gear, #settings') || ui.settingsOpen) return;
   if (mode === 'start') {
     startRun(false);
   } else if (mode === 'over' && modeTime >= RUN.restartLock) {
@@ -129,19 +152,25 @@ function onPress(e) {
 function startRun(fresh) {
   resetFlight(flight);
   runTime = 0;
-  speed = knobs(0).speed;
+  k = knobs(0);
+  speed = k.speed;
   drift.set(0, 0, 0);
   pull = { gx: 0, gy: 0, strength: 0 };
-  field.setDifficulty(knobs(0));
+  field.setDifficulty(k);
   if (fresh) {  // a new run: fresh space behind the closed view, which then opens
     kick.identity();
     fx.clear();
     updateCamera();
     field.reset(fwd, frustum, { speed });
     murk.reset(fwd, frustum, field.cosKeep);
+    setDeep(0);
     openT = 0;
+  } else {
+    walls.reset();
   }
+  walls.begin(k);
   field.begin();
+  sound.runStarted();
   input.measure();
   setMode('run');
 }
@@ -154,8 +183,11 @@ function frame(now) {
   last = now;
   fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
   if (!manual) tick(dt);
-  if (rendering) renderer.render(scene, camera);
-  if (DEBUG) debugLine(now);
+  if (rendering) {
+    applyStretch();
+    renderer.render(scene, camera);
+  }
+  if (debugEl && !debugEl.hidden) debugLine(now);
 }
 
 function tick(dt) {
@@ -167,19 +199,24 @@ function tick(dt) {
     step(dt, { attract: true, collide: false });
   } else if (mode === 'run') {
     runTime += dt;
-    const k = knobs(runTime);
+    k = knobs(runTime);
     speed = k.speed;
     field.setDifficulty(k);
+    setDeep(k.deep);
     stepFlight(flight, held, dt);
     // a massive meteor's pull: an extra turn toward it and a sideways drag (gravity.js)
     pull = field.playerPull(fwd, q, driftTarget);
     drift.lerp(driftTarget, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
     turn(dt, pull.gx, pull.gy);
-    const hit = step(dt, { collide: true });
+    const hit = step(dt, { collide: true, run: true });
+    sound.run(runTime, pull.strength);
     if (hit) onHit(hit);
   } else if (mode === 'hit') {
     hitEffect(dt);
     if (modeTime >= RUN.hitSeconds) setMode('over');
+  } else if (mode === 'over' && fx) {
+    fx.update(dt, move.set(0, 0, 0));  // space holds still behind the game-over screen; the lean eases back
+    updateCamera();
   }
 
   // the view opening at the start of a fresh run
@@ -191,12 +228,20 @@ function tick(dt) {
 
   ui.setCircle(flight.cx, flight.cy);
   ui.setTimer(runTime);
+  if (fx) ui.setLeanEdge(fx.side.amount, fx.side.angle, SHAKE.edge);
 }
 
-// Pitch and yaw in camera space only: the camera never rolls by itself. gx, gy: the extra turn of a pull (°/s).
+// Pitch and yaw only: the camera never rolls by itself (the lean is a separate visual roll). The player's turn is
+// on the screen as they see it, so it is turned by the lean into the ship's frame; the pull (gx, gy, °/s) is in
+// the ship's frame already.
 function turn(dt, gx = 0, gy = 0) {
-  const ax = (flight.wy + gy) * DEG * dt;    // pitch up = +x
-  const ay = -(flight.wx + gx) * DEG * dt;   // yaw right = -y
+  const lean = fx?.lean ?? 0;
+  const c = Math.cos(lean);
+  const s = Math.sin(lean);
+  const sx = flight.wy * DEG * dt;    // pitch up = +x
+  const sy = -flight.wx * DEG * dt;   // yaw right = -y
+  const ax = c * sx - s * sy + gy * DEG * dt;
+  const ay = s * sx + c * sy - gx * DEG * dt;
   const angle = Math.hypot(ax, ay);
   if (angle > 0) {
     q.multiply(dq.setFromAxisAngle(axis.set(ax / angle, ay / angle, 0), angle));
@@ -206,28 +251,71 @@ function turn(dt, gx = 0, gy = 0) {
 
 function updateCamera() {
   fwd.set(0, 0, -1).applyQuaternion(q);
-  camera.quaternion.copy(q).multiply(kick).multiply(fx ? fx.kickRotation(fxKick) : fxKick);
+  camera.quaternion.copy(q);
+  if (fx) camera.quaternion.multiply(fx.leanRotation(leanQ)).multiply(fx.kickRotation(fxKick));
+  camera.quaternion.multiply(kick);
   camera.updateMatrixWorld();
-  projView.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+  projView.multiplyMatrices(projBase, camera.matrixWorldInverse);
   frustum.setFromProjectionMatrix(projView);
 }
 
-// Moves space by one frame. Returns the rock that hit the player, if any.
-function step(dt, { attract = false, collide = true, timeScale = 1, flySpeed = speed }) {
+// The slight stretch of the view along a massive meteor's direction (only for drawing; the frustum uses the
+// unstretched projection, which sees a little more, so nothing is placed or dropped where it would show).
+function applyStretch() {
+  const a = fx ? fx.side.amount * SHAKE.stretch : 0;
+  camera.projectionMatrix.copy(projBase);
+  if (a > 1e-4) {
+    const ux = Math.cos(fx.side.angle);
+    const uy = Math.sin(fx.side.angle);
+    const r = camera.aspect;   // width / height
+    stretchM.set(
+      1 + a * ux * ux, (a * ux * uy) / r, 0, 0,
+      a * ux * uy * r, 1 + a * uy * uy, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    );
+    camera.projectionMatrix.premultiply(stretchM);
+  }
+  camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+}
+
+// Moves space by one frame. Returns the rock that hit the player, if any. run: a run is on (walls, camera layers).
+function step(dt, { attract = false, collide = true, timeScale = 1, flySpeed = speed, run = false }) {
   updateCamera();
   move.copy(fwd).multiplyScalar(flySpeed * dt).addScaledVector(drift, dt);
   const hit = field.update(dt, { fwd, frustum, move, speed, timeScale, collide, attract });
-  for (const e of field.events) fx.explode(e.p, e.s);
-  fx.update(dt * timeScale, move);
+  walls.update(dt, { runTime, k, speed, q, flight, drift, fwd, frustum, move, spawn: run });
+  qInv.copy(q).invert();
+  for (const e of field.events) {
+    fx.explode(e.p, e.s);
+    local.copy(e.p).applyQuaternion(qInv);
+    sound.boom(e.d, local.x / Math.max(e.d, 1), e.s);
+  }
+  for (const m of field.misses) {
+    local.copy(m.p).applyQuaternion(qInv);
+    const kk = fx.nearMiss(local.x, local.y, m.gap, m.s);
+    sound.whoosh(kk, local.x / Math.max(1, Math.hypot(local.x, local.y)), m.speed);
+  }
+  fx.update(dt * timeScale, move, run ? { strain: strain(flight), pull } : {});
   murk.update(dt, { move, fwd, frustum, cosKeep: field.cosKeep });
   motes.update(move);
   field.render(frustum);
   return hit;
 }
 
+// Space shifts from blue-black to red-black and the dust thickens (deep 0..1, from the difficulty).
+function setDeep(d) {
+  if (Math.abs(d - deep) < 0.002) return;
+  deep = d;
+  scene.background.lerpColors(spaceColors[0], spaceColors[1], d);
+  scene.fog.color.copy(scene.background);
+  motes.setDeep(d);
+  murk?.setDeep(d);
+}
+
 // ---- hit: a short recoil, a kick of the view and the view closing in; then the game-over screen
 function onHit(rock) {
-  lastHit = { speed, t: runTime, type: rock.type };
+  lastHit = { speed, t: runTime, type: rock.type, wall: !!rock.wall };
   const isNew = runTime > best;
   if (isNew) {
     best = runTime;
@@ -236,6 +324,8 @@ function onHit(rock) {
   ui.gameOver(runTime, best, isNew);
   ui.setBest(best);
   kickAxis.set(Math.random() - 0.5, Math.random() - 0.5, 0).normalize();
+  fx.calm();
+  sound.hit();
   setMode('hit');
 }
 
@@ -250,8 +340,7 @@ function hitEffect(dt) {
   const wobble = RUN.kickDegrees * DEG * Math.exp(-t / 0.22) * Math.sin(2 * Math.PI * 7 * t + 0.6);
   kick.setFromAxisAngle(kickAxis, wobble);
   step(dt, { collide: false, timeScale: Math.exp(-t / 0.15), flySpeed: recoil });
-  const k = Math.min(1, t / RUN.hitSeconds);
-  const e = 1 - (1 - k) ** 3;
+  const e = 1 - (1 - Math.min(1, t / RUN.hitSeconds)) ** 3;
   ui.setEdge(1 - 0.65 * e, 0.92 * e);
 }
 
@@ -273,6 +362,7 @@ function resize() {
   camera.fov = (2 * Math.atan(tv)) / DEG;
   camera.aspect = aspect;
   camera.updateProjectionMatrix();
+  projBase.copy(camera.projectionMatrix);
   field?.setView(camera, h * renderer.getPixelRatio(), frustum);
   motes.resize(camera, h * renderer.getPixelRatio());
   ui.layout();
@@ -281,24 +371,31 @@ function resize() {
 window.addEventListener('resize', resize);
 window.visualViewport?.addEventListener('resize', resize);
 
-// ---- debug read-outs (?debug) and a small handle for tests
+// ---- the debug read-out (a setting, off by default) and a small handle for tests (?debug)
 let debugEl = null;
 let debugAt = 0;
-function debugLine(now) {
-  if (now - debugAt < 250) return;
-  debugAt = now;
-  if (!debugEl) {
+function showDebug(on) {
+  if (on && !debugEl) {
     debugEl = document.createElement('pre');
     debugEl.id = 'debug';
     document.body.append(debugEl);
   }
-  const k = knobs(runTime);
+  if (debugEl) debugEl.hidden = !on;
+}
+
+function debugLine(now) {
+  if (now - debugAt < 250 || !field) return;
+  debugAt = now;
   const s = field.stats;
   const t = s.types;
-  debugEl.textContent = `${set} ${Math.round(fps)} fps  D ${k.D.toFixed(2)}  ${speed.toFixed(0)} m/s  gap ${k.pathGap.toFixed(1)} s\n`
+  const w = walls.stats;
+  const a = sound.state;
+  debugEl.textContent = `${set} ${Math.round(fps)} fps  D ${k.D.toFixed(2)}  ${speed.toFixed(0)} m/s  gap ${k.pathGap.toFixed(1)} s  deep ${deep.toFixed(2)}\n`
     + `meteors ${s.alive}/${s.target} drawn ${s.drawn}  size×${field.sizeFactor.toFixed(2)}  calls ${renderer.info.render.calls}\n`
     + `decoy ${t.decoy} exploder ${t.exploder} big ${t.big} massive ${t.massive} frag ${t.frag}  booms ${s.explosions}  next massive ${field.massiveIn.toFixed(0)} s\n`
-    + `circle ${flight.cx.toFixed(2)},${flight.cy.toFixed(2)}  turn ${flight.wx.toFixed(0)},${flight.wy.toFixed(0)} °/s  pull ${pull.strength.toFixed(2)} (${pull.gx.toFixed(0)},${pull.gy.toFixed(0)} °/s) drift ${drift.length().toFixed(1)} m/s`;
+    + `walls ${w.spawned} (skipped ${w.skipped}, combos ${w.combos}) next ${Math.max(0, walls.nextAt - runTime).toFixed(1)} s  warn ${k.wallWarn.toFixed(1)} s every ${k.wallGap.toFixed(1)} s  calm ×${field.inflowScale.toFixed(2)}  plan ${w.planMs.toFixed(1)} ms\n`
+    + `circle ${flight.cx.toFixed(2)},${flight.cy.toFixed(2)}  turn ${flight.wx.toFixed(0)},${flight.wy.toFixed(0)} °/s  pull ${pull.strength.toFixed(2)} (${pull.gx.toFixed(0)},${pull.gy.toFixed(0)} °/s) drift ${drift.length().toFixed(1)} m/s  lean ${(fx.lean / DEG).toFixed(0)}°\n`
+    + `audio ${a.context}${a.loaded ? '' : ' (music loading)'}  music ${a.playing ? `level ${a.intensity.toFixed(2)} depth ${a.depth.toFixed(2)}` : 'off'}  near misses ${fx.stats.nearMisses}`;
 }
 
 window.hole = {
@@ -309,26 +406,34 @@ window.hole = {
   get fps() { return fps; },
   flight,
   get field() { return field; },
+  get walls() { return walls; },
   get fwd() { return fwd.clone(); },
+  get q() { return q.clone(); },
   get pull() { return pull; },
   get drift() { return drift.clone(); },
   get lastHit() { return lastHit; },
   get fx() { return fx; },
+  get deep() { return deep; },
+  sound,
+  settings,
   ui,
   input,
   renderer,
   ...(DEBUG ? {
     placeAhead: (dist, size) => field.placeAhead(fwd, dist, size),
     place: (opts) => field.place(fwd, opts),
-    // An empty stage for screenshots and tests: no field rocks, no massive meteors, only placed rocks hit.
+    // An empty stage for screenshots and tests: no field rocks, no massive meteors, no walls, only placed rocks hit.
     stage: () => {
       field.clear();
       fx.clear();
       field.densityScale = 0;
       field.autoMassive = false;
       field.testOnly = true;
+      walls.auto = false;
     },
     spawnMassive: (opts) => field.spawnMassive(fwd, opts),
+    // A wall now (opts: holes [{ off, phi }] in degrees, warn, check, combo, test)
+    spawnWall: (opts = {}) => walls.spawn({ runTime, k, speed, q, flight, drift, fwd, frustum, move }, { test: true, ...opts }),
     camera,
     scene,
     setRendering: (on) => { rendering = on; },
@@ -339,6 +444,8 @@ window.hole = {
       for (let t = 0; t < seconds - 1e-9; t += stepSeconds) tick(stepSeconds);
       return mode;
     },
+    // Jump the run clock (the difficulty) to t seconds; space keeps what it has, new spawns follow.
+    setRunTime: (t) => { runTime = t; },
     realtime: () => { manual = false; },
   } : {}),
 };

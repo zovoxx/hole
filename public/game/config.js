@@ -75,6 +75,16 @@ export const DIFFICULTY = {
   decoyDeepBias: [1.4, 3],    // shade = 1 - (1 - u)^bias: higher = more decoys near the deep (exploder-like) end
   massiveGap: [45, 16],       // s between massive meteors put near your path
   pull: [0.75, 0.9],          // strength of a massive meteor's pull on you (at 0.9 holding against it still wins)
+  // Contoo 3: walls, combos and the look of depth (DESIGN §9, §11)
+  wallGap: [15, 6],           // s between walls (geometric in D^wallEase), never under wallGapMin
+  wallGapMin: 6,
+  wallWarn: [4, 2],           // s: a wall emerges from the murk this long before you reach it (linear in D^wallEase)
+  wallWarnMin: 2,
+  wallEase: 1.6,              // > 1: walls stay slow and well warned through the first half minute
+  wallTwoHoles: [0.65, 0.4],  // chance a wall has two holes (else one)
+  wallExploders: [-0.045, 0.03],  // share of wall rocks that are exploders (none before D ≈ 0.6, ~35 s)
+  wallCombo: [-0.75, 0.5],    // chance a wall due near a massive meteor comes anyway, next to it (none before D 0.6)
+  deep: [0.15, 1.35],         // D over which space shifts from blue-black to red-black and the dust thickens
 };
 
 // World around the player (floating origin: the player stays at 0,0,0 and space moves).
@@ -191,4 +201,75 @@ export const GRAVITY = {
   // with 1–2 clear holes (holeRadius m plus the rock's own radius) you can steer through.
   escape: { spacing: 21, lateral: [6, 135], across: 95, depth: 12, holes: [1, 2], holeRadius: 15,
             holeAt: [24, 80], size: [4, 9] },
+};
+
+// ---- Contoo 3: pressure (DESIGN §9–11, TECH "Walls", "Camera effects", "Audio")
+
+// Walls: a curtain of rocks across your path with 1–2 holes. It is part of a sphere around where you are when it
+// appears, of radius warning × speed, so it stands at the same distance across every direction you could turn to.
+// Only the part inside the kept cone exists as rocks; turning fills in more of it, out of view. Holes are never on
+// the path you are on (flying on as you are misses them by missBy m) and each is made by a simulated pilot that
+// starts steering `reaction` s after the wall appears (the flight model, the pulls, the rocks in the way).
+export const WALL = {
+  extent: 115,            // deg from your heading when it appears: how far round the curtain reaches
+  spacing: 12,            // m between rock centres (an even net on the sphere)
+  jitter: 0.3,            // share of the spacing, sideways
+  depth: 4,               // ± m in and out of the curtain
+  size: [10, 15],         // m rock radius (log-uniform); with the spacing ~98% of the curtain is solid
+  fadeSeconds: 0.7,       // how fast it comes out of the murk
+  holeRadius: [17, 14],   // m clear (plus each rock's radius), over difficulty (D 0 -> 1)
+  holeOffset: [10, 24],   // deg off your heading (on screen: the short side shows ±30°)
+  holeMax: 45,            // deg: turning, holes can also be where you are turning to (within aheadSpread of where
+  aheadSpread: 20,        // you would be heading after aheadSeconds), up to holeMax off your heading now
+  aheadSeconds: 1,
+  holeApart: 75,          // deg at least between two holes (around your heading)
+  reaction: 0.6,          // s before the simulated pilot starts steering...
+  clearance: 2.5,         // ...and it must pass at least this far inside the hole's edge
+  missBy: 4,              // m: flying on as you are passes at least this far outside every hole's rim
+  candidates: 16,         // hole layouts tried per wall
+  retry: 0.25,            // s: try again this soon when no layout passes or a massive meteor is in the way
+  giveUp: 4,              // s of retrying, then this wall is skipped
+  firstAfter: [0.9, 1.1], // first wall after this share of the wall gap (about 15 s)
+  gapJitter: [0.85, 1.15],
+  // The field thins around each wall (inflow far ahead, timed for when you reach the wall): clearer approach,
+  // a short calm after it. Seconds relative to reaching the wall.
+  calm: { depth: 0.55, in: [-2.5, -0.6], out: [1.2, 3] },
+  exploderFuse: [0.8, 2], // s: a wall exploder lights as the wall appears and blows up >= ~1.25 s before you reach it
+  massiveClear: 8,        // m kept clear around a massive meteor's swarm (combo walls)
+};
+
+// Space gets deeper over a run (knobs().deep 0 -> 1): blue-black -> red-black, thicker dust.
+export const DEEP = {
+  space: '#0f0408',
+  dust: '#c4a09c', haze: '#7a4752', motes: '#b8918c',
+  dustOpacity: 1.35, hazeOpacity: 1.35, motesOpacity: 1.5,
+  motesMore: 0.7,         // extra motes at full depth (share of the count)
+};
+
+// Camera effects: smooth wobbles of the view only (never the HUD), stacked and capped.
+export const SHAKE = {
+  maxDegrees: 4.5,        // cap of all the shake rotations together (pitch/yaw; the lean is a separate roll)
+  handling: { base: 0.05, strain: 0.45, hz: [5.3, 7.9, 11.3] },  // deg: always a little, more when steering against your momentum
+  rumble: { degrees: 1.1, hz: [1.9, 2.9, 4.3] },                   // deg at full pull
+  nearMiss: { range: 5, degrees: 0.9, seconds: 0.4, hz: 8 },      // m from the rock's surface
+  lean: { degrees: 25, full: 0.6, seconds: 0.45, back: 1.1 },     // roll toward a massive meteor (full at pull 0.6), eases back
+  edge: 0.75,             // darkest edge on the meteor's side (at full pull)
+  stretch: 0.06,          // the view stretched along the meteor's direction (at full pull)
+  smooth: 0.12,           // s: amplitudes glide, never jump
+};
+
+// Synthesized sounds (no files) and the settings.
+// Levels measured offline against the music (loops at -21 ... -18 dB RMS, peaks -11 ... -5 dB): a near boom and the
+// crash peak around -3 dB, a full whoosh around -9 dB, the rumble at full pull about -20 dB RMS (mostly sub bass).
+export const SOUND = {
+  volume: 0.9,
+  whoosh: { gain: 0.9, seconds: 0.6 },
+  boom: { gain: 1.45, range: 330, near: 40 },  // m: full loudness inside `near`, gone at `range`
+  rumble: { gain: 0.35 },
+  crash: { gain: 1.5 },
+};
+export const SETTINGS = {
+  key: 'hole.settings',
+  steps: 10,                                      // volume steps (0 = off ... 10)
+  defaults: { music: 8, sound: 8, debug: false }, // 8 = the mixed level (MUSIC.volume, SOUND.volume)
 };

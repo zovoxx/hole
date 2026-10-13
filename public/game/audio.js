@@ -4,7 +4,9 @@
 // Over a run the music climbs 1 -> 4 in one cycle (MUSIC.cycleSeconds). In the cycle's last descentSeconds it
 // sinks smoothly back to 1: the levels crossfade down, a low-pass filter closes and opens again and the reverb
 // swells, while the next depth eases in (more reverb, more sub, a low drone on the tonal centre). Nothing ever
-// switches at once. Contoo adds the synthesized sounds (whoosh, rumble, boom).
+// switches at once.
+// Contoo 3: the synthesized sounds (Sfx: whoosh, rumble, boom, crash; no files) and a duck for the game-over
+// screen (the music goes under and quiet, then comes back for the next run).
 const ASSETS_URL = new URL('../assets/', import.meta.url);  // same as loader.js; kept here so this file stands alone
 
 // iOS and Chrome start an AudioContext suspended until a tap/click/key; call this from that event.
@@ -70,6 +72,7 @@ export class Music {
     this.sub.gain.value = 0;
     this.out = ctx.createGain();
     this.out.gain.value = volume;
+    this.duckGain = ctx.createGain();  // the game-over screen ducks the music (duck()); 1 = not ducked
     this.limiter = ctx.createDynamicsCompressor();  // gentle limiter so overlapping loops never clip
     this.limiter.threshold.value = -3;
     this.limiter.knee.value = 3;
@@ -82,7 +85,7 @@ export class Music {
     this.wet.gain.value = 0;
     this.mix.connect(this.lowpass).connect(this.sub).connect(this.out);
     this.lowpass.connect(this.reverb).connect(this.wet).connect(this.out);
-    this.out.connect(this.limiter).connect(ctx.destination);
+    this.out.connect(this.duckGain).connect(this.limiter).connect(ctx.destination);
     this.drone = null;
   }
 
@@ -221,6 +224,13 @@ export class Music {
     this.out.gain.setTargetAtTime(v, this.ctx.currentTime, seconds / 3);
   }
 
+  // 1 = full, less = ducked (the game-over screen); glides over `seconds`.
+  duck(v, seconds = 0.8) {
+    const p = this.duckGain.gain;
+    p.cancelScheduledValues(this.ctx.currentTime);
+    p.setTargetAtTime(v, this.ctx.currentTime, seconds / 3);
+  }
+
   // Position in the loop (seconds from loopStart), for display.
   position() {
     const l = this.loops[0];
@@ -276,4 +286,189 @@ function makeDrone(ctx, hz, out, reverb) {
   send.gain.value = 0.5;
   gain.connect(send).connect(reverb);
   return { gain, oscs, lfo };
+}
+
+// ---- synthesized sounds (TECH "Audio"): no files, all built from noise and oscillators.
+// - whoosh: band-passed noise sweeping down (a rock rushing past), panned to its side;
+// - rumble: low-passed brown noise plus a slowly wandering 30–50 Hz tone, its level following the pull;
+// - boom: a noise burst through a low-pass that is darker the further away, plus a falling low tone;
+// - crash: the hit (a close boom with a harder thud).
+export class Sfx {
+  constructor(ctx, { volume = 0.9, cfg = {} } = {}) {
+    this.ctx = ctx;
+    this.cfg = cfg;
+    this.out = ctx.createGain();
+    this.out.gain.value = volume;
+    this.comp = ctx.createDynamicsCompressor();  // keeps stacked booms from clipping
+    this.comp.threshold.value = -10;
+    this.comp.knee.value = 6;
+    this.comp.ratio.value = 6;
+    this.comp.attack.value = 0.003;
+    this.comp.release.value = 0.2;
+    this.out.connect(this.comp).connect(ctx.destination);
+    this.white = noiseBuffer(ctx, 2, false);
+    this.brown = noiseBuffer(ctx, 4, true);
+    this.voices = 0;          // sounds playing now (whooshes and booms are capped)
+    this.rumble = null;
+    this.stats = { whoosh: 0, boom: 0, crash: 0 };
+  }
+
+  setVolume(v, seconds = 0.2) {
+    this.out.gain.setTargetAtTime(v, this.ctx.currentTime, seconds / 3);
+  }
+
+  // A panner (StereoPanner where there is one) feeding the output.
+  pan(x, dest = this.out) {
+    if (!this.ctx.createStereoPanner) return dest;
+    const p = this.ctx.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, x));
+    p.connect(dest);
+    return p;
+  }
+
+  noise(buffer = this.white, when = this.ctx.currentTime, seconds = 1) {
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    src.start(when, Math.random() * Math.max(0, buffer.duration - seconds - 0.05));
+    src.stop(when + seconds + 0.05);
+    return src;
+  }
+
+  // A rock passes close: k = how close 0..1, pan = its side (-1 left ... 1 right), speed m/s (relative).
+  whoosh(k, pan, speed = 50) {
+    if (this.voices > 10 || k <= 0.02) return;
+    const c = this.ctx;
+    const t = c.currentTime;
+    const dur = (this.cfg.whoosh?.seconds ?? 0.6) * (0.8 + 0.4 * Math.random());
+    const src = this.noise(this.white, t, dur);
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.4;
+    const f0 = 900 + 1600 * Math.min(1, speed / 80);   // faster = higher
+    bp.frequency.setValueAtTime(f0 * 1.6, t);
+    bp.frequency.exponentialRampToValueAtTime(f0 * 0.28, t + dur);  // passing: the pitch falls
+    const g = c.createGain();
+    const peak = (this.cfg.whoosh?.gain ?? 0.55) * (0.25 + 0.75 * k);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.06);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp).connect(g).connect(this.pan(pan * 0.85));
+    this.track(src, dur);
+    this.stats.whoosh++;
+  }
+
+  // An explosion d metres away (pan -1..1), from a rock of radius s.
+  boom(d, pan = 0, s = 7) {
+    if (this.voices > 10) return;
+    const B = this.cfg.boom ?? { gain: 1, range: 330, near: 40 };
+    const far = Math.min(1, Math.max(0, (d - B.near) / (B.range - B.near)));
+    const level = B.gain * (1 - far) ** 1.6 * Math.min(1.3, Math.sqrt(s / 7));
+    if (level < 0.01) return;
+    this.blast(level, pan, 1 - far, 1.1 + 0.9 * far);
+    this.stats.boom++;
+  }
+
+  // The hit.
+  crash() {
+    this.blast(this.cfg.crash?.gain ?? 0.9, 0, 1.2, 0.9);
+    this.stats.crash++;
+  }
+
+  // level 0..1, pan, bright 0..1 (near = bright), dur s
+  blast(level, pan, bright, dur) {
+    const c = this.ctx;
+    const t = c.currentTime;
+    const out = this.pan(pan * 0.7);
+    // the burst: noise, darker with distance
+    const src = this.noise(this.white, t, dur);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(500 + 4500 * bright * bright, t);
+    lp.frequency.exponentialRampToValueAtTime(140 + 200 * bright, t + dur);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(level * 0.9, t + 0.008);
+    g.gain.exponentialRampToValueAtTime(level * 0.3, t + 0.18);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp).connect(g).connect(out);
+    // the body: a falling low tone
+    const osc = c.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(95, t);
+    osc.frequency.exponentialRampToValueAtTime(32, t + dur * 0.8);
+    const og = c.createGain();
+    og.gain.setValueAtTime(0.0001, t);
+    og.gain.exponentialRampToValueAtTime(level * 0.8, t + 0.02);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.9);
+    osc.connect(og).connect(out);
+    osc.start(t);
+    osc.stop(t + dur);
+    this.track(src, dur);
+  }
+
+  track(src, dur) {
+    this.voices++;
+    setTimeout(() => { this.voices--; }, (dur + 0.1) * 1000);
+    src.onended = null;
+  }
+
+  // The rumble of a massive meteor's pull: started once, its level follows strength (0..1) smoothly.
+  setRumble(strength) {
+    const c = this.ctx;
+    if (!this.rumble) {
+      if (strength <= 0.001) return;
+      const gain = c.createGain();
+      gain.gain.value = 0;
+      gain.connect(this.out);
+      const src = c.createBufferSource();
+      src.buffer = this.brown;
+      src.loop = true;
+      const lp = c.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.value = 130;
+      lp.Q.value = 0.9;
+      src.connect(lp).connect(gain);
+      src.start();
+      const osc = c.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 40;
+      const lfo = c.createOscillator();  // the tone wanders 33–47 Hz
+      lfo.frequency.value = 0.13;
+      const lfoDepth = c.createGain();
+      lfoDepth.gain.value = 7;
+      lfo.connect(lfoDepth).connect(osc.frequency);
+      const og = c.createGain();
+      og.gain.value = 0.12;
+      osc.connect(og).connect(gain);
+      osc.start();
+      lfo.start();
+      this.rumble = { gain, nodes: [src, osc, lfo], level: 0 };
+    }
+    const level = (this.cfg.rumble?.gain ?? 0.7) * Math.min(1, strength) ** 0.8;
+    if (Math.abs(level - this.rumble.level) < 0.004) return;
+    this.rumble.level = level;
+    this.rumble.gain.gain.setTargetAtTime(level, c.currentTime, 0.12);
+  }
+}
+
+// Noise for the sounds: white, or brown (integrated, for the rumble), mono.
+function noiseBuffer(ctx, seconds, brown) {
+  const n = Math.floor(ctx.sampleRate * seconds);
+  const buf = ctx.createBuffer(1, n, ctx.sampleRate);
+  const d = buf.getChannelData(0);
+  let b = 0;
+  for (let i = 0; i < n; i++) {
+    const w = Math.random() * 2 - 1;
+    if (brown) {
+      b = (b + 0.02 * w) / 1.02;
+      d[i] = b * 3.5;
+    } else {
+      d[i] = w * 0.7;
+    }
+  }
+  if (brown) {  // make it loop without a step at the seam
+    const step = d[n - 1] - d[0];
+    for (let i = 0; i < n; i++) d[i] -= (step * i) / (n - 1);
+  }
+  return buf;
 }

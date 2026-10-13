@@ -4,8 +4,10 @@
 // - Motes: tiny dust in a box around the camera that wraps as you fly (in the shader), for the feel of speed.
 // - Murk: a few big dust and haze sprites from the conto drifting in the fog; they appear and leave like the
 //   meteors (never in view) and thin out as you get close, so they never cover the screen.
+// Contoo 3: setDeep(deep 0..1) over a run: the motes and murk shift from blue-gray to red-gray and thicken (more
+// motes fade in one by one, the sprites get denser). Slow and smooth: nothing pops.
 import * as THREE from 'three';
-import { SPACE, SPRITES, WORLD } from './config.js';
+import { SPACE, SPRITES, WORLD, DEEP } from './config.js';
 import { spriteMaterial } from './sprites.js';
 
 function mulberry32(seed) {
@@ -78,12 +80,17 @@ export function createStars(pixelRatio) {
 export class Motes {
   constructor(set) {
     const { count, box, size, color, opacity } = SPACE.motes;
-    const n = count[set] ?? count.mobile;
+    const n = Math.round((count[set] ?? count.mobile) * (1 + DEEP.motesMore));
     const pos = new Float32Array(n * 3);
+    const rank = new Float32Array(n);
     for (let i = 0; i < n * 3; i++) pos[i] = (Math.random() * 2 - 1) * box;
+    for (let i = 0; i < n; i++) rank[i] = i / n;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    geometry.setAttribute('aRank', new THREE.BufferAttribute(rank, 1));
     this.offset = new THREE.Vector3();
+    this.colors = [new THREE.Color(color), new THREE.Color(DEEP.motes)];
+    this.opacity = opacity;
     this.material = new THREE.ShaderMaterial({
       uniforms: {
         uOffset: { value: this.offset },
@@ -92,8 +99,11 @@ export class Motes {
         uScale: { value: 500 },
         uColor: { value: new THREE.Color(color) },
         uOpacity: { value: opacity },
+        uShare: { value: 1 / (1 + DEEP.motesMore) },
       },
       vertexShader: `
+        attribute float aRank;
+        uniform float uShare;
         uniform vec3 uOffset;
         uniform float uHalf;
         uniform float uSize;
@@ -107,7 +117,7 @@ export class Motes {
           float z = max(-mv.z, 0.05);
           float px = uSize * uScale / z;
           vAlpha = (1.0 - smoothstep(uHalf * 0.5, uHalf * 0.95, d)) * smoothstep(0.8, 3.0, d)
-                 * clamp(px / 1.5, 0.0, 1.0);
+                 * clamp(px / 1.5, 0.0, 1.0) * clamp((uShare - aRank) / 0.03, 0.0, 1.0);
           gl_PointSize = clamp(px, 1.5, 7.0);
         }`,
       fragmentShader: `
@@ -133,6 +143,14 @@ export class Motes {
     this.material.uniforms.uScale.value = heightPx / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
   }
 
+  // deep 0..1: more motes (each fades in as the share passes it), redder, a little stronger.
+  setDeep(deep) {
+    const u = this.material.uniforms;
+    u.uShare.value = (1 + DEEP.motesMore * deep) / (1 + DEEP.motesMore);
+    u.uColor.value.lerpColors(this.colors[0], this.colors[1], deep);
+    u.uOpacity.value = this.opacity * (1 + (DEEP.motesOpacity - 1) * deep);
+  }
+
   update(move) {
     const span = 2 * SPACE.motes.box;
     this.offset.add(move);
@@ -149,6 +167,8 @@ export class Murk {
   // sprites = loadSprites() result
   constructor(scene, sprites) {
     this.items = [];
+    this.colors = {};
+    this.deep = 0;
     const make = (kind, list, n, [s0, s1]) => {
       if (!list?.length) return;
       for (let i = 0; i < n; i++) {
@@ -159,6 +179,7 @@ export class Murk {
         scene.add(sprite);
         this.items.push({ kind, sprite, size: s0, range: [s0, s1], base: SPRITES[kind].opacity, fade: 1,
                           spin: (Math.random() - 0.5) * 0.02 });
+        this.colors[kind] ??= [new THREE.Color(SPRITES[kind].color), new THREE.Color(DEEP[kind])];
       }
     };
     make('haze', sprites.haze, SPACE.sprites.haze, SPACE.sprites.hazeSize);
@@ -197,6 +218,16 @@ export class Murk {
 
   reset(fwd, frustum, cosKeep) {
     for (const it of this.items) this.place(it, fwd, frustum, cosKeep, true);
+  }
+
+  // deep 0..1: redder and denser.
+  setDeep(deep) {
+    this.deep = deep;
+    for (const it of this.items) {
+      const [a, b] = this.colors[it.kind];
+      it.sprite.material.color.lerpColors(a, b, deep);
+      it.base = SPRITES[it.kind].opacity * (1 + ((it.kind === 'dust' ? DEEP.dustOpacity : DEEP.hazeOpacity) - 1) * deep);
+    }
   }
 
   update(dt, { move, fwd, frustum, cosKeep }) {

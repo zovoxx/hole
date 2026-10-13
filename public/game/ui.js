@@ -2,7 +2,9 @@
 // canvas. Camera effects never touch this layer, so the HUD never shakes, rolls or flashes.
 // Fullscreen is only ever asked for from the fullscreen button (never automatically, never mid-run) and the game
 // never leaves it by itself, so Safari's fullscreen warning comes up as rarely as possible.
-import { HUD, RUN } from './config.js';
+// Contoo 3: the settings panel (gear on the start and game-over screens: music and sound volume, the debug
+// read-out; taps only, no sliders, nothing reaches the game behind it) and the lean's darker edge.
+import { HUD, RUN, SETTINGS } from './config.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -43,6 +45,9 @@ export class UI {
     this.buttons = { left: $('btn-left'), right: $('btn-right'), up: $('btn-up'), down: $('btn-down') };
     this.screens = { loading: $('loading'), start: $('start'), over: $('over') };
     this.edge = $('edge');
+    this.leanEdge = $('lean-edge');
+    this.leanKey = '';
+    this.settingsEl = $('settings');
     this.timerText = '';
     this.range = 100;
     this.circleXY = [NaN, NaN];
@@ -90,6 +95,7 @@ export class UI {
   // mode: 'loading' | 'start' | 'run' | 'hit' | 'over'
   show(mode) {
     document.body.dataset.mode = mode;
+    if (mode !== 'start' && mode !== 'over') this.closeSettings();
     for (const [name, el] of Object.entries(this.screens)) el.classList.toggle('shown', name === mode);
     this.updateFullscreenButtons();
   }
@@ -122,6 +128,94 @@ export class UI {
     this.edge.style.opacity = '1';
     this.edge.style.background = `radial-gradient(circle closest-corner at 50% 50%, rgba(1,2,5,0) ${inner.toFixed(1)}%, `
       + `rgba(1,2,5,${(dark * 0.55).toFixed(3)}) ${(inner + 18).toFixed(1)}%, rgba(1,2,5,${dark.toFixed(3)}) ${(iris * 100 + 25).toFixed(1)}%)`;
+  }
+
+  // The darker screen edge on a massive meteor's side: amount 0..1, angle = its direction on screen (rad, 0 =
+  // right, counterclockwise).
+  setLeanEdge(amount, angle, max) {
+    const a = Math.round(amount * max * 100) / 100;
+    const deg = Math.round(90 - (angle * 180) / Math.PI);   // CSS: 0deg points up, clockwise
+    const key = a > 0.005 ? `${a}|${deg}` : '0';
+    if (key === this.leanKey) return;
+    this.leanKey = key;
+    if (key === '0') {
+      this.leanEdge.style.opacity = '0';
+      return;
+    }
+    this.leanEdge.style.opacity = '1';
+    this.leanEdge.style.background = `linear-gradient(${deg}deg, rgba(0,0,0,0) 30%, rgba(0,0,0,${(a * 0.55).toFixed(2)}) 62%, `
+      + `rgba(0,0,0,${a.toFixed(2)}) 90%)`;
+  }
+
+  // ---- settings: settings = { music, sound, debug } (changed in place); onChange(settings) after every change
+  setupSettings(settings, onChange) {
+    this.settings = settings;
+    const el = this.settingsEl;
+    const tap = (b, fn) => {
+      b.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); fn(); }, { passive: false });
+      b.addEventListener('click', (e) => { e.stopPropagation(); b.blur(); fn(); });
+      b.addEventListener('pointerdown', (e) => e.stopPropagation());
+    };
+    for (const g of document.querySelectorAll('.gear')) tap(g, () => this.openSettings());
+    // nothing on the panel reaches the game (a press there must never start or restart a run)
+    el.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      if (e.target === el) this.closeSettings();   // the dim area around the card
+    });
+    el.addEventListener('touchend', (e) => { if (e.target === el) { e.preventDefault(); this.closeSettings(); } }, { passive: false });
+    el.addEventListener('click', (e) => e.stopPropagation());
+    for (const st of el.querySelectorAll('.stepper')) {
+      const key = st.dataset.key;
+      for (const b of st.querySelectorAll('button')) {
+        tap(b, () => {
+          settings[key] = Math.min(SETTINGS.steps, Math.max(0, settings[key] + Number(b.dataset.d)));
+          this.renderSettings();
+          onChange(settings);
+        });
+      }
+    }
+    const toggle = el.querySelector('.toggle');
+    tap(toggle, () => {
+      settings.debug = !settings.debug;
+      this.renderSettings();
+      onChange(settings);
+    });
+    tap(el.querySelector('.done'), () => this.closeSettings());
+    window.addEventListener('keydown', (e) => {
+      if (this.settingsOpen && (e.key === 'Escape' || e.key === 'Enter')) {
+        e.preventDefault();
+        this.closeSettings();
+      }
+    });
+    this.renderSettings();
+  }
+
+  renderSettings() {
+    const s = this.settings;
+    for (const st of this.settingsEl.querySelectorAll('.stepper')) {
+      const v = s[st.dataset.key];
+      st.querySelector('output').textContent = v ? `${Math.round((v / SETTINGS.steps) * 100)}%` : 'Off';
+      st.querySelector('[data-d="-1"]').disabled = v <= 0;
+      st.querySelector('[data-d="1"]').disabled = v >= SETTINGS.steps;
+    }
+    const t = this.settingsEl.querySelector('.toggle');
+    t.setAttribute('aria-pressed', String(!!s.debug));
+    t.textContent = s.debug ? 'On' : 'Off';
+  }
+
+  openSettings() {
+    this.settingsEl.hidden = false;
+  }
+
+  closeSettings() {
+    // (the key press that closes it must not start a run: main.js ignores presses while it is open and for a
+    // moment after)
+    if (!this.settingsEl.hidden) this.closedAt = performance.now();
+    this.settingsEl.hidden = true;
+  }
+
+  get settingsOpen() {
+    return !this.settingsEl.hidden || performance.now() - (this.closedAt ?? -1e9) < 150;
   }
 
   // ---- fullscreen
