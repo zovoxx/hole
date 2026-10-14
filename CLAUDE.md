@@ -90,6 +90,9 @@ go in a permanent folder (`%USERPROFILE%\Documents\HoleWork\`), never in Temp.
   `requestAnimationFrame` there: keep screens static. `node tools/test_world.mjs` tests the logic in seconds.
 - Sound can't be judged by ear in the cloud: render it with an `OfflineAudioContext` in headless Chromium and
   compare peak/RMS with the music loops (Contoo 3 levels in `SOUND`); the owner tunes by ear.
+- In the cloud the network policy blocks `*.workers.dev` (the live site can't be fetched); `npx wrangler dev` works
+  (npm is allowed) for checking `public/` and `_headers` locally. Whole runs can be flown in Node with
+  `tools/sim.mjs` (fairness/don'ts: `tools/audit.mjs`): far cheaper than the browser for statistics.
 - Look at screenshots of every visual change. Fog must match the background exactly: with Neutral tone mapping
   it doesn't (fogged rocks showed as dark silhouettes), so the game uses no tone mapping; a dithered fade-in
   showed as hatched discs, so fade-in is extra fog.

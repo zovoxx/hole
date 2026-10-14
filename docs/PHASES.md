@@ -263,3 +263,11 @@ restart.
 - Every item on the don'ts list holds.
 
 **Estimated usage:** ~70%
+
+---
+
+## After the phases
+
+Contoo 4 ran without play feedback, so feel tuning (control weight, speeds, densities, the curve) happens in short
+rounds when the owner says "tune: ..." after playing: change the knobs in `config.js`, re-run `tools/audit.mjs`,
+`tools/test_world.mjs` and `tools/test_game.mjs`, push. About 10–20% of a usage window each.

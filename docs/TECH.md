@@ -14,6 +14,11 @@ something works better, and update this file when you do. All numbers are starti
   `public/` is deployed exactly as it is in git.
 - WebAudio for all sound. DOM/CSS for the HUD and screens.
 - Cloudflare Workers static assets (`wrangler.jsonc` → `assets.directory = ./public`). No server code.
+- Loading (Contoo 4): `index.html` preloads the whole module graph (`modulepreload`) and the manifest, so the
+  browser fetches them at once instead of import by import. `public/_headers` lets browsers keep meteors, sprites
+  and music for 30 days; the game asks for them as `file?v=<bytes>` (sizes from the manifest, `assetUrl` in
+  `loader.js`), so a changed file gets a new URL. The code and the manifest keep Cloudflare's default
+  (`max-age=0, must-revalidate`). `wrangler dev` serves `_headers` the same way.
 
 ## Code layout (`public/game/`)
 
@@ -36,6 +41,7 @@ something works better, and update this file when you do. All numbers are starti
 | `audio.js` | `Music` (the intensity loops, the 5-minute cycle, the game-over duck) and `Sfx` (synthesized whoosh, rumble, boom, crash) |
 | `sound.js` | The game's audio: one AudioContext, unlock on the first gesture, music loading in the background, what plays when (run, hit, restart), volumes |
 | `settings.js` | Player settings (music volume, sound volume, debug read-out) in `localStorage` |
+| `quality.js` | Adaptive quality (Contoo 4): steps the pixel ratio down while frames stay slow |
 | `ui.js` | HUD (cross, circle, timer, touch buttons), the loading / start / game-over screens, fullscreen, best time, the settings panel, the lean's darker edge |
 | `style.css` | Page, HUD and screen styles (sizes from `--u` = 1% of min(width, height)) |
 
@@ -136,8 +142,11 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
     turn, even all the way round, always finds space already full. A rock that would touch the view is skipped.
   - **Dropping:** a meteor that leaves the cone is dropped once it is out of view; past R + 5 m (in the fog)
     too. A wider view (phone turned to landscape) fills the new ring around the cone at once.
-  - **Start of a run:** the whole cone is filled at once behind the closed view (from 20 m), with the first
-    220 m of the path clear. Behind the start screen meteors do not drift, so the path stays clear.
+  - **Start of a run:** the whole cone is filled at once behind the closed view, with nothing within
+    `WORLD.startClear` (80 m, big rocks' moons included) and the first 220 m of the path clear. Behind the start
+    screen meteors do not drift, so the path stays clear; when the first run starts from it, the rocks within 80 m
+    that are out of view are cleared (`clearNear`; the ones you can see stay). Contoo 4: with the fill from 20 m,
+    turning at once could meet a rock 30–45 m to the side less than a second after the view opened.
   - `tools/test_world.mjs` checks the density is even (±15%) at every distance flying straight and turning,
     that nothing new appears in view except faded at the far edge, and that nothing comes from behind.
 - **Density from the difficulty:** `DIFFICULTY.pathGap` is the seconds between rocks in your path if you flew
@@ -161,6 +170,11 @@ Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in
   These rocks carry a `far` allowance so they aren't dropped as "past the fog".
 - **Drawing:** every frame only the meteors whose bounding sphere is in view are written into their shape's
   `InstancedMesh` (~250 at the start, ~600 at full difficulty).
+- **Far LOD (Contoo 4, PC only):** each small shape has a second `InstancedMesh` with its mobile mesh and textures,
+  loaded in the background after the start screen (`loadFarLod` in `main.js`, `field.addFarLod`). A small rock whose
+  radius on screen is under `LOD.farPx` (48 device px) is drawn with it; it switches back above ×1.2 (no flicker).
+  Big rocks and fragments always use their own set. Two minutes in, ~85% of the drawn rocks are far and the
+  triangles halve (1.04 M → 0.53 M) with no visible change (`docs/checks/contoo4_ship.jpg`).
 - **Nothing from behind:** meteor speeds stay below player speed (fragments and slingshots are the
   exception; nothing exists behind you, so they are dropped once behind and out of view). A massive meteor is
   kept while it still pulls you and is not behind you (cos > −0.5), even outside the cone.
@@ -236,8 +250,11 @@ As built in Contoo 3 (`walls.js`, `WALL`, the wall knobs in `DIFFICULTY`):
     braking on the way in, allowing for the pull;
   - no rock already there (its straight-line motion, its collision reach plus 1.25 m) is in the pilot's way in
     the last 0.8 s before the wall or in the hole itself (rocks earlier on the way are dodged like any rock).
-  Up to 16 layouts are tried (~3–7 ms); if none passes, the wall tries again every 0.25 s and is skipped after
-  4 s. Measured: placed at once 87–100% of the time when flying straight, 73–100% when turning.
+  Up to 16 layouts are tried (~2–5 ms: flying on as you are doesn't depend on the holes, so that path is flown
+  once per wall and each layout is measured against it, `pathThrough`); if none passes, the wall tries again every
+  0.25 s and is skipped after 4 s. Measured: placed at once 87–100% of the time when flying straight, 73–100% when
+  turning. The planner is warmed up at boot (`walls.warmUp`: three plans thrown away), since its first, cold run
+  took 16–25 ms, a hitch just as the first wall came out of the murk.
 - **Rhythm and calm:** a wall every `wallGap` seconds (15 s → 6 s, geometric in D^1.6, floor 6; ±15% jitter; the
   first after ~15 s). The field's inflow far ahead thins to 45% around each wall, timed for when you reach it
   (from 2.5 s before to 3 s after, smooth): a clearer approach and a short calm after. Walls never come while a
@@ -380,7 +397,16 @@ summed and capped at 4.5°. Only the canvas camera moves.
 - Camera: the short side of the screen always shows 60°; the long side at most 100° (portrait phones get a
   taller view, ultra-wide screens a lower one). Touch buttons: min(124 px, max(64 px, 20% of the short side)),
   multi-touch, each thumb holds the nearest button it is on (15% slop), so two thumbs give diagonals.
-- Pixel ratio capped (about 1.5 on mobile, 2 on PC); adaptive quality if frame time stays high.
+- Pixel ratio capped (1.5 on mobile, 2 on PC). Adaptive quality (Contoo 4, `quality.js`, `QUALITY`): the median
+  frame time over 2 s; slower than 50 fps steps the pixel ratio down (×0.82, 0.68, 0.55 of the start, never under
+  0.75). With vsync a frame takes 16.7 or 33.3 ms, so a step that brings no speed-up tries the next; if even the
+  lowest brings none (a 30 fps power-saving cap, or the CPU is the limit) it goes back and stops adapting. It never
+  steps back up during a visit. Stalls (> 0.1 s), hidden tabs and the first 3 s after loading (shaders compile,
+  textures upload) don't count; tests on the manual clock never adapt.
+- Leaving the page mid-run (another app or tab, a locked phone: `visibilitychange`) pauses the run (mode
+  `paused`); coming back, "Paused / Tap to continue" with the HUD and timer visible waits for a tap or key (0.3 s
+  lock). Without it, a run came back flying into whatever was ahead.
+- A browser that can't start WebGL gets a message on the loading screen (the renderer is made in a try/catch).
 - Best time in `localStorage` (wrapped in try/catch).
 - Settings (Contoo 3): a gear button on the start and game-over screens opens a panel with Music and Sounds
   volume (− / + steps) and a Debug info switch (the top-left read-out; off by default). Taps only (no sliders: every
@@ -479,6 +505,14 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
 - `NODE_PATH=$(npm root -g) node tools/check_pressure.mjs [out.jpg] [--tiles dir]` (Playwright, ~10 min): the
   Contoo 3 check sheet `docs/checks/contoo3_pressure.jpg` (an early wall from appearing to its hole, a late wall
   with exploders, the lean, blue-black vs red-black space, the settings panel and the debug read-out).
+- `node tools/audit.mjs [--quick] [--only collision|walls|escape|bots|donts]` (~3 min, Node, Contoo 4): the
+  fairness and don'ts audit. Collision spheres against the real meshes (GLBs read directly), walls and escape holes
+  over 0 s … 20 min, bot runs (straight, turning at random, a careful one) logging how long each killer was in
+  sight before it hit, and immortal runs checking that nothing pops into or out of view, nothing behind you moves
+  toward you, rocks never change once there and no knob jumps between frames. `tools/sim.mjs` is its harness
+  (whole runs as `main.js` plays them, `seedRandom` for reproducible runs). `node tools/bench.mjs`: the logic cost
+  per frame and per wall plan at six points of a run. `NODE_PATH=$(npm root -g) node tools/check_ship.mjs`: the
+  Contoo 4 check sheet (far LOD on/off, a fresh run, the screens).
 - `NODE_PATH=$(npm root -g) node tools/test_game.mjs [--shots dir] [--only desktop|mobile]` (Playwright,
   ~5 min): serves `public/` itself and plays the game on desktop and on iPhone, Android and iPad emulation
   (portrait, landscape, rotation): no console errors or 404s, keys and two-thumb touch, circle speed and
@@ -489,6 +523,7 @@ Paths are relative to `public/assets/`. The game reads only this file to find as
   of fps, meteor counts, walls, the flight state and audio is the Debug info setting (off by default).
   Contoo 3 adds: the settings panel (mouse and touch), audio unlocking on the first key / tap, the music playing
   and following the run, a wall in a run, the HUD not moving under shake and lean, the lean easing back, red-black
-  space ten minutes in.
+  space ten minutes in. Contoo 4 adds: the far LOD on PC (none on mobile), the pause when the page is left, the
+  message without WebGL, a close blast's glow staying small, no roll over 12 s without massive meteors.
 - Serve and look at the browser console: `npx wrangler dev` (http://localhost:8787) or
   `python -m http.server 8000 -d public`.

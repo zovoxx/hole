@@ -88,7 +88,8 @@ body.touch .pad { display: flex; }
 .best.new { color: #f2d27a; }
 
 #over { background: radial-gradient(ellipse at 50% 50%, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0.8) 100%); }
-#paused { background: radial-gradient(ellipse at 50% 50%, rgba(1, 2, 5, 0.35) 0%, rgba(1, 2, 5, 0.6) 100%); }
+#paused { background: radial-gradient(ellipse at 50% 50%, rgba(1, 2, 5, 0.35) 0%, rgba(1, 2, 5, 0.6) 100%);
+          justify-content: flex-start; padding-top: calc(50vh + var(--u) * 24); }   /* below the cross and the circle's range */
 #paused .label { color: #e6eaf3; font-size: clamp(16px, calc(var(--u) * 3.6), 26px); letter-spacing: 0.4em; padding-left: 0.4em;
                  text-transform: uppercase; }
 #over .label { font-size: clamp(12px, calc(var(--u) * 2.4), 16px); letter-spacing: 0.3em; text-transform: uppercase; }

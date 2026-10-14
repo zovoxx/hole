@@ -20,7 +20,7 @@ export class Quality {
     this.state = 'watch';   // watch -> trial (a step was taken) -> watch, or done
     this.samples = [];
     this.sum = 0;
-    this.settle = 0;
+    this.settle = cfg.startAfter ?? 0;   // the first frames after loading are slow anyway
     this.before = 0;
     this.from = 0;
   }

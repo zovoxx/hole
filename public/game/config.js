@@ -10,7 +10,8 @@ export const PIXEL_RATIO_MAX = { pc: 2, mobile: 1.5 };
 
 // Contoo 4, adaptive quality (quality.js): frames slower than slowFps (median over `window` s) step the pixel ratio
 // down (base × steps, never under floor); a step that doesn't speed frames up by `gain` is undone and adapting stops.
-export const QUALITY = { slowFps: 50, window: 2, settle: 0.6, gain: 0.08, steps: [1, 0.82, 0.68, 0.55], floor: 0.75 };
+export const QUALITY = { slowFps: 50, window: 2, settle: 0.6, gain: 0.08, steps: [1, 0.82, 0.68, 0.55], floor: 0.75,
+                         startAfter: 3 };  // s of frames before the first look (shaders compile, textures upload)
 
 // Contoo 4, far LOD on PC: small rocks smaller than farPx on screen (radius in device px) use the mobile mesh;
 // they switch back above farPx × hysteresis. (On mobile every rock already uses the mobile mesh.)

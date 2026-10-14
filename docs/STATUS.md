@@ -150,17 +150,70 @@
     and touch, audio unlock, music following the run, a wall in a run, HUD steady under shake and lean, the lean
     easing back, red-black space). Check sheet `docs/checks/contoo3_pressure.jpg` from `tools/check_pressure.mjs`.
 
+- **Contoo 4: Tune and ship** (2026-10-14). The fairness, don'ts and performance passes. No feel tuning yet: there
+  was no play feedback when the phase ran (see Next).
+  - Fairness audit (`tools/audit.mjs`, shared harness `tools/sim.mjs`: whole runs as `main.js` plays them, in Node):
+    - Collision spheres: every one of the 15 shapes' spheres lies inside its rendered mesh, PC and mobile (the
+      closest is 0.04 m inside at the largest size), so nothing hits you in empty space.
+    - Walls at 12 points from 0 s to 20 min (30 walls each, flying straight or turning): 359 of 360 placed (one
+      skipped after 4 s of retries, as designed), a pilot reacting 0.6 s late makes every hole, flying on slips
+      through a random gap 0–1 times in 30.
+    - Escape holes from 20 s to 20 min: 28–30 of 30 get out.
+    - Bots fly whole runs (straight on; turning at random; a careful one that dodges what it sees and steers for
+      holes) and every death logs how long the killer had been in sight (in view, faded in, ≥ 20% through the fog).
+      Found and fixed: a fresh run filled space from 20 m, so turning at once could meet a rock 30–45 m to the side
+      0.75–0.95 s after the view opened. Now nothing is within 80 m when a run starts (`WORLD.startClear`, moons
+      included), and at the first run the near rocks you can't see are cleared. Result over 72–180 deaths: shortest
+      warning 0.87–0.92 s, the careful bot 0–1 deaths in 60 under 1 s, median 3.4 s. The rare short ones are
+      turning blindly into a rock that had drifted just past the view's edge (raising the turn-fill distance didn't
+      change them: those rocks flowed in from ahead).
+  - Don'ts audit (DESIGN §13), all hold:
+
+    | Don't | Checked by |
+    | --- | --- |
+    | No ship, cockpit or character | nothing is drawn but space (screenshots) |
+    | No roll on its own, never upside down | `test_game`: 12 s of turns, blasts and walls, max roll 0.006°; the lean only near a massive meteor, easing back (Contoo 3); even star sphere, lights ride with the camera |
+    | No full-screen flash | `test_game`: a blast 14 m ahead glows over 30% of half the view; the hit darkens |
+    | No joystick feel, no circle speed-up, no re-centring | `test_world` / `test_game` flight checks (constant speed, stays where left) |
+    | No levels or jumps | `audit`: no knob moves more than 0.07% of its range in a frame |
+    | Nothing pops in or out | `audit`: 10 min of runs (85 walls, 895 explosions): nothing appears or vanishes in view (1 rock swallowed deep inside a massive meteor) |
+    | No meteors from behind | `audit`: nothing behind you ever moves toward you |
+    | Nothing changes once there | `audit`: type, size and colour of a rock never change |
+    | No power-ups, boost or brake | speed comes only from the difficulty curve |
+  - Performance:
+    - Far LOD on PC: small rocks under 48 px (radius) on screen use their mobile mesh (`LOD`), loaded in the
+      background after the start screen (+0.95 MB). Two minutes in: 1.04 M → 0.53 M triangles, same picture
+      (`docs/checks/contoo4_ship.jpg`).
+    - Adaptive quality (`quality.js`, `QUALITY`): frames slower than 50 fps for 2 s step the pixel ratio down
+      (×0.82, 0.68, 0.55 of the start, not under 0.75). A step that brings no speed-up tries the next; if even the
+      lowest brings none (a 30 fps power-saving cap, or the CPU) it goes back and stops adapting. Never steps up.
+    - CPU (`tools/bench.mjs`, this machine): field + walls + instance writes 0.6–0.9 ms a frame (95%: 1.1–1.8 ms).
+      Planning a wall 2–5 ms (the fly-on path is now flown once per wall, not per layout); the planner is warmed
+      up at boot (the first, cold plan took 16–25 ms, a hitch just as the first wall came out of the murk).
+    - Load: before the start screen the phone set is ~3.1 MB over the wire (three.js 0.45 MB gzipped, game code
+      0.06 MB, meteors and sprites 2.6 MB: ~2.5 s at 10 Mbps), PC ~7.6 MB; the music (3 / 6.5 MB) streams in
+      after. `index.html` preloads the whole module graph and the manifest. `public/_headers`: meteors, sprites
+      and music are kept 30 days by browsers; the game asks for `file?v=<bytes>`, so a changed file gets a new URL.
+      Code and the manifest are checked on every visit (Cloudflare's default). Verified with `wrangler dev`.
+    - GPU memory (textures with mipmaps): mobile ~100 MB, PC ~390 MB.
+  - Polish: leaving the page mid-run (another app or tab, a locked phone) pauses it; coming back, "Paused / Tap to
+    continue" (HUD and timer visible) waits for a tap or key. A browser that can't start WebGL says so instead of
+    an endless loading bar. Screens and icons checked on phone, iPad and PC.
+  - Tests: `test_world` (+ adaptive quality), `test_game` (+ far LOD, pause, no WebGL, flash size, no roll; the
+    exploder check waits for its own exploder: a far one going off first made it flaky), `audit` (~3 min), all
+    pass. Three older checks failed now and then on the previous commit too and were widened to their measured
+    spread: walls next to a massive meteor (23–30 of 30 against 24; now 40 runs, ≥ 75%), a swarm of 7–10 sometimes
+    losing one member (≥ 85%), flying straight through a wall by luck (1–4 of 40; ≤ 10%). Check sheet `docs/checks/contoo4_ship.jpg` from `tools/check_ship.mjs`.
+
 ## Next
 
-- **Try Contoo 3 on the deployed site** (PHASES Contoo 3 "Done when"), on PC and phone, with sound on: do walls
-  appear about 4 s ahead early and about 2 s ahead after a few minutes, is there always a hole you can make if you
-  react, and is it never straight ahead? Over a long run, does space get denser, faster and redder with no
-  visible step? Do the shakes feel like smooth wobbles (not jitter), and does the lean near a massive meteor ease
-  back? Do you hear the whoosh, the rumble and the boom, and does the music rise without a switch and fall back
-  to calm after 5 minutes? Are the sound levels right next to the music (Settings has both volumes)? Is
-  anything too much (walls too often or too dense, rattle too strong, whooshes too frequent)? Contoo 1–2's points
-  still apply.
-- **Contoo 4: Tune and ship.** Say "make contoo phase 4". Feel, fairness and performance with your feedback.
+- **Play it on the deployed site and tell me how it feels** (PHASES Contoo 4 "Done when"): five runs in a row on
+  your phone and on PC: did every death feel like your own mistake? Any stutter on the phone (walls appearing,
+  explosions, near massive meteors)? Does it load in a few seconds on mobile data? Then the feel: is the steering
+  too heavy or too light, the speed right, the field too crowded after ~30 s (it is dense from there), walls too
+  often, too many explosions late in a run (about one every 1.5 s at full difficulty), the shakes and whooshes too
+  much? Every knob is in `public/game/config.js`; a tuning round is quick. Say "tune: ..." with what you felt.
+- Contoo 3's points (walls, curve, camera effects, sound levels) still apply if you haven't tried them yet.
 
 ## Decisions
 
@@ -218,6 +271,15 @@
     60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
     direction", never "you can't get out").
 
+- Contoo 4 judgement calls (tell me if any is wrong):
+  - A run pauses when you leave the page (the design has no pause; coming back mid-flight crashed you into
+    whatever was ahead). It never pauses on its own otherwise, and there is no pause button.
+  - Nothing within 80 m when a run starts (was 20 m): the first second is a little emptier around you.
+  - The far LOD switches at 48 px on screen; the adaptive resolution never goes under 0.75 of a CSS pixel and
+    never steps back up during a visit.
+  - Walls still let you slip through a random gap now and then when flying straight on (about 5% of walls early,
+    1–3% late); the hole is never on your path, but the curtain is ~98% solid, not 100%.
+
 - Contoo 3 judgement calls (tell me if any is wrong):
   - Walls are part of a sphere around you (the same distance in every direction you could turn to), not a flat
     curtain: a flat one that still fills the view as you close in needed 4–5× the rocks, and you could fly round
@@ -236,6 +298,12 @@
 
 ## Notes for Contoo
 
+- Contoo 4 → tuning rounds: `node tools/audit.mjs` (~3 min; `--quick`, `--only collision|walls|escape|bots|donts`)
+  re-checks fairness and the don'ts after any knob change; `node tools/bench.mjs` the CPU cost per frame;
+  `tools/check_ship.mjs` the check sheet. `tools/sim.mjs` runs whole runs in Node (`game()`, `seedRandom()`).
+  Phones are unmeasured (no device here): the adaptive resolution is the safety net; if a phone still stutters,
+  the next steps are fewer wall rocks (bigger, see Contoo 3 notes), a lower `WORLD.maxMeteors`, or a cheaper
+  meteor material on mobile (the two flash point lights are in every meteor's shader).
 - Contoo 3 → 4: tuning knobs are `WALL`, `SHAKE`, `SOUND`, `DEEP` and the wall knobs in `DIFFICULTY`
   (`config.js`). The wall pilot (`pilot()` in `walls.js`) is shared with the tests and the check sheet; the
   fairness audit can run `wallRun()` / `comboRun()` from `tools/test_world.mjs` over the whole difficulty range.
@@ -316,3 +384,4 @@
 | Contoo 1 | 2026-10-11 | (to ask) | Cloud session; the meteor field took three designs (direction bins over-filled near you; far-cap inflow + turn fill is exact) |
 | Contoo 2 | 2026-10-12 | (to ask) | Cloud session; gravity needed two fixes (full-strength pull emptied the field into the big rocks; all-pairs loop 3.5 ms → grid 1 ms) |
 | Contoo 3 | 2026-10-13 | (to ask) | Cloud session; walls took a coverage sweep (82% → 98% solid: bigger rocks, no thin shapes), the pilot tuned and holes allowed where you are turning to; plus the owner's settings panel |
+| Contoo 4 | 2026-10-14 | (to ask) | Cloud session; no play feedback yet, so fairness/don'ts/performance only; the bot audit found the start-of-run problem; `*.workers.dev` is blocked by the cloud network policy, so the live site couldn't be checked from here |
