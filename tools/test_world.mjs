@@ -660,5 +660,32 @@ console.log('near misses');
     `2.5 m: ${close.events} event(s), 15 m: ${far.events}`);
 }
 
+// ---- Contoo 4: performance
+
+console.log('adaptive quality');
+{
+  const { Quality } = await game('quality.js');
+  // made-up devices: frame time as a function of the pixel ratio
+  const fly = (q, frameAt, seconds = 30) => {
+    for (let t = 0; t < seconds;) {
+      const dt = frameAt(q.pixelRatio);
+      q.update(dt);
+      t += dt;
+    }
+    return q;
+  };
+  const vsync = (ms) => Math.ceil(ms / 16.667 - 1e-9) * (1 / 60);      // a 60 Hz screen
+  const gpu = fly(new Quality(1.5), (pr) => vsync(9 + 9 * pr * pr));  // drawing-bound: 29 ms at 1.5
+  const fast = fly(new Quality(2), () => 1 / 60);
+  const capped = fly(new Quality(1.5), () => 1 / 30);                  // a 30 fps power-saving cap
+  const cpu = fly(new Quality(1.5), (pr) => vsync(24 + pr));            // the CPU is the limit
+  check(gpu.pixelRatio < 1.5 && gpu.pixelRatio >= 0.75 && fast.pixelRatio === 2 && fast.state === 'watch',
+    'slow drawing: the resolution steps down until frames are fast; fast devices keep it',
+    `drawing-bound phone 1.5 -> ${gpu.pixelRatio} (levels ${gpu.levels.join(', ')}), fast PC stays at ${fast.pixelRatio}`);
+  check(capped.pixelRatio === 1.5 && capped.state === 'done' && cpu.pixelRatio === 1.5 && cpu.state === 'done',
+    'a step that buys no speed (a 30 fps cap, a CPU limit) is undone and adapting stops',
+    `capped ${capped.pixelRatio} (${capped.state}), CPU-bound ${cpu.pixelRatio} (${cpu.state})`);
+}
+
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');
 process.exit(failures ? 1 : 0);

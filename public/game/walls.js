@@ -75,7 +75,9 @@ export function pilot(f, q, rel, pull, dt) {
 // opts: speedAt(t), massives (proxies { p0, v, s, pull }), rocks (proxies { p0, v, r }: they only count in the
 // last `rockSeconds` before the shell and inside it, where they would plug the hole; rocks earlier on the way are
 // dodged like any rock), sheet (proxies that count all the way: a massive meteor's escape sheet, flown on through
-// for `after` m past the wall), dt, until (stop after this long and return the heading in `end`).
+// for `after` m past the wall), dt, until (stop after this long and return the heading in `end`), record (keep the
+// positions inside the shell in `path`: flying on as you are doesn't depend on the holes, so one flight serves every
+// layout, see pathThrough).
 export function flyThrough(start, wall, hole, opts) {
   const dt = opts.dt ?? 1 / 30;
   const f = { ...start.f };
@@ -93,6 +95,7 @@ export function flyThrough(start, wall, hole, opts) {
   const pr = FLIGHT.playerRadius;
   let pull = { gx: 0, gy: 0, strength: 0 };
   let inBand = false;
+  const path = opts.record ? [] : null;
   if (hole) target.copy(hole.dir).multiplyScalar(L + 30);
   const tMax = opts.until ?? wall.warn * 2.5 + 2;
   const rockFrom = L - band - opts.speedAt(0) * (opts.rockSeconds ?? 0.8);
@@ -130,6 +133,7 @@ export function flyThrough(start, wall, hole, opts) {
     const d = P.length();
     if (d > L - band && d < L + band) {
       inBand = true;
+      path?.push(P.clone());
       for (let i = 0; i < wall.holes.length; i++) {
         const h = wall.holes[i];
         const along = P.dot(h.dir);
@@ -142,7 +146,23 @@ export function flyThrough(start, wall, hole, opts) {
   }
   const i = hole ? wall.holes.indexOf(hole) : -1;
   return { ok: inBand && (i < 0 || through[i] >= WALL.clearance), through: through.map((x) => (inBand ? x : -Infinity)),
-           hitRock: false, end: { P, fwd } };
+           hitRock: false, end: { P, fwd }, path };
+}
+
+// flyThrough's `through` for these holes from a recorded path (m inside each hole's edge, min over the shell).
+export function pathThrough(path, holes) {
+  const pr = FLIGHT.playerRadius;
+  return holes.map((h) => {
+    if (!path.length) return -Infinity;
+    let m = Infinity;
+    for (const P of path) {
+      const d = P.length();
+      const along = P.dot(h.dir);
+      const perp = along > 0 ? Math.sqrt(Math.max(0, d * d - along * along)) : Infinity;
+      m = Math.min(m, h.r - pr - perp);
+    }
+    return m;
+  });
 }
 
 // Everything the pilot needs to know about the moment a wall appears.
@@ -192,6 +212,24 @@ export class Walls {
     this.auto = true;         // tests can switch the timer off
     this.last = null;         // the last wall's layout check, for tests and the debug line
     this.stats = { spawned: 0, skipped: 0, retries: 0, combos: 0, candidates: 0, rocks: 0, planMs: 0 };
+  }
+
+  // Plans (and throws away) a few walls, so the browser has compiled the planner before the first real wall (cold, it
+  // took ~4x longer: a hitch just as the wall comes out of the murk). ctx as update().
+  warmUp(ctx, n = 3) {
+    const field = this.field;
+    for (let i = 0; i < n; i++) {
+      const w = this.spawn(ctx);
+      if (!w) continue;
+      for (let j = field.rocks.length - 1; j >= 0; j--) {
+        const r = field.rocks[j];
+        if (r.wall !== w) continue;
+        field.rocks[j] = field.rocks[field.rocks.length - 1];
+        field.rocks.pop();
+        field.release(r);
+      }
+    }
+    this.reset();
   }
 
   // A run begins: the first wall after about one wall gap.
@@ -313,6 +351,7 @@ export class Walls {
     const n = Math.random() < k.wallTwoHoles ? 2 : 1;
     let chosen = null;
     let tries = 0;
+    let idlePath = null;   // flying on as you are (the same for every layout)
     const tryLayout = (hs) => {
       tries++;
       const wall = { L, warn: W, holes: hs };
@@ -320,8 +359,8 @@ export class Walls {
       // flying on as you are must pass outside every hole's whole rim (its clear radius plus the biggest rock
       // there: the rocks' collision spheres sit inside their size, so the hole is a little wider than its clear
       // radius) by missBy
-      const idle = flyThrough(start, wall, null, { speedAt, massives: proxies });
-      if (idle.through.some((x) => x > -(WALL.size[1] + 1 + WALL.missBy) - pr)) return false;
+      idlePath ??= flyThrough(start, { L, warn: W, holes: [] }, null, { speedAt, massives: proxies, record: true }).path;
+      if (pathThrough(idlePath, hs).some((x) => x > -(WALL.size[1] + 1 + WALL.missBy) - pr)) return false;
       // each hole can be made, past the rocks already there (and on through an escape sheet)
       for (const h of hs) {
         const near = rocks.filter((r) => segmentDistance(r.p0, h.dir, L) < r.r + r.reachIn + 25);

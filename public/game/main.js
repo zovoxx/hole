@@ -14,6 +14,7 @@ import { Input } from './input.js';
 import { UI, loadBest, saveBest } from './ui.js';
 import { loadSettings, saveSettings } from './settings.js';
 import { GameSound } from './sound.js';
+import { Quality } from './quality.js';
 
 const DEG = Math.PI / 180;
 const params = new URLSearchParams(window.location.search);
@@ -35,7 +36,8 @@ ui.setupSettings(settings, (s) => {
 // ---- renderer, scene, camera (the camera never uses lookAt: orientation is a quaternion turned by pitch/yaw)
 const canvas = document.getElementById('view');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(pixelRatio(set));
+const quality = new Quality(pixelRatio(set));   // steps the resolution down if frames stay slow
+renderer.setPixelRatio(quality.pixelRatio);
 // No tone mapping: the scene is dark, the yellows stay yellow (Contoo 2), and fog blends linearly into exactly
 // the background colour, so a fully fogged rock is gone. (Neutral tone mapping squares the contrast of very dark
 // colours: fogged rocks stood out as dark or dithered silhouettes.)
@@ -58,7 +60,8 @@ for (const l of [LIGHTS.key, LIGHTS.rim]) {
   camera.add(light, light.target);
 }
 
-scene.add(createStars(renderer.getPixelRatio()));  // around the origin, where the camera always is
+const stars = createStars(renderer.getPixelRatio());  // around the origin, where the camera always is
+scene.add(stars);
 const motes = new Motes(set);
 scene.add(motes.points);
 
@@ -131,12 +134,29 @@ async function boot() {
   field.reset(fwd, frustum, { speed, attract: true });
   murk.reset(fwd, frustum, field.cosKeep);
   setDeep(0);
+  const k1 = knobs(60);
+  walls.warmUp({ runTime: 60, k: k1, speed: k1.speed, q, flight, drift, fwd, frustum });
   renderer.compile(scene, camera);
   ui.setBest(best);
   showDebug(settings.debug);
   setMode('start');
   renderer.setAnimationLoop(frame);
   sound.load(manifest);  // the music decodes in the background; the game doesn't wait for it
+  if (set === 'pc') loadFarLod(manifest);
+}
+
+// PC: the mobile meshes of the small rocks as a far LOD (Contoo 4), loaded in the background; until they are in,
+// every rock uses its PC mesh. Their textures are uploaded at once, so the first far rocks don't hitch.
+async function loadFarLod(manifest) {
+  try {
+    const lo = await loadMeteors(manifest, 'mobile', () => {}, { groups: ['small'] });
+    for (const mesh of field.addFarLod(lo.small)) {
+      const m = mesh.material;
+      for (const tex of [m.map, m.normalMap, m.roughnessMap, m.metalnessMap, m.aoMap]) if (tex) renderer.initTexture(tex);
+    }
+  } catch (err) {
+    console.warn(`far LOD: ${err.message}; keeping the PC meshes`);
+  }
 }
 
 // ---- presses: start, restart (never while the settings are open)
@@ -180,10 +200,18 @@ function startRun(fresh) {
 let manual = false;    // tests drive the clock with hole.advance() (?debug)
 
 function frame(now) {
-  const dt = Math.min(0.05, Math.max(0, (now - last) / 1000));
+  const raw = Math.max(0, (now - last) / 1000);
+  const dt = Math.min(0.05, raw);
   last = now;
   fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
   if (!manual) tick(dt);
+  if (!manual && rendering) {
+    const pr = quality.update(raw, !document.hidden);
+    if (pr) {
+      renderer.setPixelRatio(pr);
+      resize();
+    }
+  }
   if (rendering) {
     applyStretch();
     renderer.render(scene, camera);
@@ -366,6 +394,7 @@ function resize() {
   projBase.copy(camera.projectionMatrix);
   field?.setView(camera, h * renderer.getPixelRatio(), frustum);
   motes.resize(camera, h * renderer.getPixelRatio());
+  stars.material.uniforms.uPixelRatio.value = renderer.getPixelRatio();
   ui.layout();
   input.measure();
 }
@@ -391,8 +420,8 @@ function debugLine(now) {
   const t = s.types;
   const w = walls.stats;
   const a = sound.state;
-  debugEl.textContent = `${set} ${Math.round(fps)} fps  D ${k.D.toFixed(2)}  ${speed.toFixed(0)} m/s  gap ${k.pathGap.toFixed(1)} s  deep ${deep.toFixed(2)}\n`
-    + `meteors ${s.alive}/${s.target} drawn ${s.drawn}  size×${field.sizeFactor.toFixed(2)}  calls ${renderer.info.render.calls}\n`
+  debugEl.textContent = `${set} ${Math.round(fps)} fps  px ×${renderer.getPixelRatio()}${quality.state === 'done' ? ' (fixed)' : ''}  D ${k.D.toFixed(2)}  ${speed.toFixed(0)} m/s  gap ${k.pathGap.toFixed(1)} s  deep ${deep.toFixed(2)}\n`
+    + `meteors ${s.alive}/${s.target} drawn ${s.drawn} (far ${s.far})  size×${field.sizeFactor.toFixed(2)}  calls ${renderer.info.render.calls}\n`
     + `decoy ${t.decoy} exploder ${t.exploder} big ${t.big} massive ${t.massive} frag ${t.frag}  booms ${s.explosions}  next massive ${field.massiveIn.toFixed(0)} s\n`
     + `walls ${w.spawned} (skipped ${w.skipped}, combos ${w.combos}) next ${Math.max(0, walls.nextAt - runTime).toFixed(1)} s  warn ${k.wallWarn.toFixed(1)} s every ${k.wallGap.toFixed(1)} s  calm ×${field.inflowScale.toFixed(2)}  plan ${w.planMs.toFixed(1)} ms\n`
     + `circle ${flight.cx.toFixed(2)},${flight.cy.toFixed(2)}  turn ${flight.wx.toFixed(0)},${flight.wy.toFixed(0)} °/s  pull ${pull.strength.toFixed(2)} (${pull.gx.toFixed(0)},${pull.gy.toFixed(0)} °/s) drift ${drift.length().toFixed(1)} m/s  lean ${(fx.lean / DEG).toFixed(0)}°\n`
@@ -420,6 +449,7 @@ window.hole = {
   ui,
   input,
   renderer,
+  quality,
   ...(DEBUG ? {
     placeAhead: (dist, size) => field.placeAhead(fwd, dist, size),
     place: (opts) => field.place(fwd, opts),

@@ -1,0 +1,11 @@
+# Cloudflare static asset headers (Contoo 4). Meteors, sprites and music change rarely and are big: browsers keep
+# them for 30 days. The game asks for them as file?v=<bytes> (from assets/manifest.json), so a changed file gets a
+# new URL. Everything else (index.html, the code, the manifest) keeps Cloudflare's default: checked on every visit.
+/assets/meteors/*
+  Cache-Control: public, max-age=2592000
+
+/assets/textures/*
+  Cache-Control: public, max-age=2592000
+
+/assets/music/*
+  Cache-Control: public, max-age=2592000

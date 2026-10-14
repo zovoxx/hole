@@ -19,6 +19,32 @@
   <script type="importmap">
     { "imports": { "three": "./game/vendor/three.module.js", "three/addons/": "./game/vendor/addons/" } }
   </script>
+  <!-- the whole module graph and the manifest at once, instead of import by import (Contoo 4: load time) -->
+  <link rel="modulepreload" href="./game/vendor/three.module.js">
+  <link rel="modulepreload" href="./game/vendor/three.core.js">
+  <link rel="modulepreload" href="./game/vendor/addons/loaders/gltfloader.js">
+  <link rel="modulepreload" href="./game/vendor/addons/utils/buffergeometryutils.js">
+  <link rel="modulepreload" href="./game/vendor/addons/utils/skeletonutils.js">
+  <link rel="modulepreload" href="./game/main.js">
+  <link rel="modulepreload" href="./game/config.js">
+  <link rel="modulepreload" href="./game/device.js">
+  <link rel="modulepreload" href="./game/loader.js">
+  <link rel="modulepreload" href="./game/sprites.js">
+  <link rel="modulepreload" href="./game/flight.js">
+  <link rel="modulepreload" href="./game/difficulty.js">
+  <link rel="modulepreload" href="./game/world.js">
+  <link rel="modulepreload" href="./game/meteors.js">
+  <link rel="modulepreload" href="./game/gravity.js">
+  <link rel="modulepreload" href="./game/walls.js">
+  <link rel="modulepreload" href="./game/space.js">
+  <link rel="modulepreload" href="./game/fx.js">
+  <link rel="modulepreload" href="./game/input.js">
+  <link rel="modulepreload" href="./game/ui.js">
+  <link rel="modulepreload" href="./game/settings.js">
+  <link rel="modulepreload" href="./game/sound.js">
+  <link rel="modulepreload" href="./game/audio.js">
+  <link rel="modulepreload" href="./game/quality.js">
+  <link rel="preload" href="./assets/manifest.json" as="fetch" crossorigin>
 </head>
 <body data-mode="loading">
   <canvas id="view"></canvas>

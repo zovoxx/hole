@@ -98,7 +98,9 @@ export class Music {
       let buffer = null;
       for (const f of fmt === 'ogg' ? ['ogg', 'mp3'] : ['mp3']) {
         try {
-          const res = await fetch(new URL(m[set][f], baseUrl));
+          const url = new URL(m[set][f], baseUrl);
+          if (m.bytes?.[set]?.[f]) url.searchParams.set('v', m.bytes[set][f]);   // a version (loader.js assetUrl)
+          const res = await fetch(url);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           buffer = await this.ctx.decodeAudioData(await res.arrayBuffer());
           break;

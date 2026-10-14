@@ -322,6 +322,12 @@ async function desktop(browser, base) {
     'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
+  // Contoo 4: the far LOD (PC: the mobile meshes for rocks small on screen) and the asset versions
+  const lod = await page.waitForFunction(() => hole.field.groups.small.every((s) => s.far), null, { timeout: 60000 })
+    .then(() => page.evaluate(() => { hole.advance(1 / 60); return { far: hole.field.stats.far, drawn: hole.field.stats.drawn }; }),
+          () => ({ far: -1, drawn: 0 }));
+  check(lod.far > lod.drawn * 0.5, 'PC: small rocks far away are drawn with the mobile meshes (far LOD)',
+    `${lod.far} of ${lod.drawn} drawn far`);
   // the real clock runs too (after a screenshot the software GPU first works off its backlog)
   const tNow = await page.evaluate(() => hole.time);
   await page.evaluate(() => hole.realtime());
@@ -444,6 +450,8 @@ async function mobile(browser, base, name, device, landscape) {
   await doubleTap(cdp, vw * 0.5, vh * 0.5);
   g = await game(page);
   check(g.mode === 'run' && g.scale === 1, 'a tap restarts (no zoom)', `${g.mode}, scale ${g.scale}`);
+  const lod = await page.evaluate(() => ({ far: hole.field.groups.small.filter((s) => s.far).length, pr: hole.quality.pixelRatio }));
+  check(lod.far === 0 && lod.pr <= 1.5, 'mobile: no far LOD to load (every rock is the mobile mesh), pixel ratio ≤ 1.5', JSON.stringify(lod));
   check(problems.length === 0, 'no console errors or failed requests', problems.slice(0, 5).join(' | '));
   await context.close();
 }

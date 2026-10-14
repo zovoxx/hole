@@ -20,7 +20,7 @@
 // (inflowScale), new rocks keep out of wall holes, and rocks passing very close are reported as near misses
 // (this.misses: the whoosh and a small kick).
 import * as THREE from 'three';
-import { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY, SHAKE } from './config.js';
+import { WORLD, FLIGHT, EXPLODER, EXPLOSION, GRAVITY, SHAKE, LOD } from './config.js';
 import { createMeteorMesh, tintColor, tellAt, DustRing } from './meteors.js';
 import { knobs, linearKnob } from './difficulty.js';
 import { setupAttractor, addPull, playerPull, playerRange, orbit, escapeLayout, inHole } from './gravity.js';
@@ -94,6 +94,21 @@ function fieldDistance(r0, R, dir, fwd) {
   return lineDepth < WORLD.fadeBand && Math.random() * WORLD.fadeBand > lineDepth ? null : d;
 }
 
+// Hands the instances written this frame to the GPU (only the used part of each buffer).
+function flush(t) {
+  t.mesh.count = t.count;
+  if (!t.count) return;
+  t.mesh.instanceMatrix.clearUpdateRanges();
+  t.mesh.instanceMatrix.addUpdateRange(0, t.count * 16);
+  t.mesh.instanceMatrix.needsUpdate = true;
+  t.mesh.instanceColor.clearUpdateRanges();
+  t.mesh.instanceColor.addUpdateRange(0, t.count * 3);
+  t.mesh.instanceColor.needsUpdate = true;
+  t.fx.clearUpdateRanges();
+  t.fx.addUpdateRange(0, t.count * 4);
+  t.fx.needsUpdate = true;
+}
+
 // A random direction at angle theta from axis (unit), azimuth phi around it.
 const _a = new THREE.Vector3();
 const _b = new THREE.Vector3();
@@ -129,7 +144,7 @@ export class MeteorField {
         const mesh = createMeteorMesh(shape, cap, { fx: true });
         scene.add(mesh);
         this.groups[group].push({
-          id: shape.id, group, mesh, fx: mesh.geometry.getAttribute('aFx'), count: 0, cap,
+          id: shape.id, group, mesh, fx: mesh.geometry.getAttribute('aFx'), count: 0, cap, far: null,
           spheres: shape.collisionSpheres?.length ? shape.collisionSpheres : [[0, 0, 0, shape.collisionRadius]],
           effR: effectiveRadius(shape.collisionSpheres, shape.collisionRadius),
           collisionRadius: shape.collisionRadius ?? 0.8,
@@ -166,8 +181,24 @@ export class MeteorField {
     this.misses = [];        // near misses this frame: { p (closest point), gap (m), s, speed } (whoosh, kick)
     this.walls = null;       // the Walls (walls.js), set by it
     this.inflowScale = 1;    // the walls thin the inflow around each wall (the calm)
-    this.stats = { alive: 0, drawn: 0, target: 0, spawned: 0, explosions: 0, fragments: 0,
+    this.stats = { alive: 0, drawn: 0, far: 0, target: 0, spawned: 0, explosions: 0, fragments: 0,
                    types: { rock: 0, decoy: 0, exploder: 0, big: 0, massive: 0, frag: 0 } };
+  }
+
+  // Far LOD (Contoo 4, PC only): the mobile meshes of the small rocks, drawn for rocks smaller than LOD.farPx on
+  // screen. shapes = loadMeteors(manifest, 'mobile', ..., { groups: ['small'] }).small. Returns the new meshes.
+  addFarLod(shapes) {
+    const added = [];
+    for (const sh of this.groups.small) {
+      const lo = shapes.find((x) => x.id === sh.id);
+      if (!lo || lo.placeholder || sh.far) continue;
+      const mesh = createMeteorMesh(lo, sh.cap, { fx: true });
+      mesh.name = `${sh.id}_far`;
+      this.scene.add(mesh);
+      sh.far = { mesh, fx: mesh.geometry.getAttribute('aFx'), count: 0, cap: sh.cap };
+      added.push(mesh);
+    }
+    return added;
   }
 
   // Mean area of your path a spawned rock blocks (m², player radius included), over shapes and sizes. (A big
@@ -322,6 +353,7 @@ export class MeteorField {
     r.fadeRate = r.fuseLen = 0;   // 0 = the defaults (WORLD.fadeSeconds, EXPLODER.fuseSeconds)
     r.wall = null;
     r.entry = -1;
+    r.lodFar = false;
     r.seed = Math.random();
     r.phase = Math.random() * Math.PI * 2;
     r.tick = Math.floor(Math.random() * 3);  // which frame of three its weak gravity is applied on
@@ -814,43 +846,49 @@ export class MeteorField {
     return false;
   }
 
-  // Writes the visible rocks into their instanced meshes: matrix, tint and fx (fade, crack, glow, seed).
+  // Writes the visible rocks into their instanced meshes: matrix, tint and fx (fade, crack, glow, seed). On PC, small
+  // rocks that are small on screen go into their far (mobile) mesh.
   render(frustum) {
-    for (const sh of this.shapes) sh.count = 0;
+    for (const sh of this.shapes) {
+      sh.count = 0;
+      if (sh.far) sh.far.count = 0;
+    }
     let drawn = 0;
+    let far = 0;
     const types = this.stats.types;
     for (const k in types) types[k] = 0;
+    const farRatio = LOD.farPx / this.ringScale;   // radius / distance below which a rock is far
     for (const r of this.rocks) {
       types[r.type]++;
       if (r.fade <= 0 || !this.visible(r, frustum)) continue;
       const sh = r.shape;
-      const i = sh.count;
-      if (i >= sh.cap) continue;
+      let t = sh;
+      if (sh.far) {
+        r.lodFar = r.s < farRatio * (r.lodFar ? LOD.hysteresis : 1) * r.p.length();
+        if (r.lodFar) {
+          t = sh.far;
+          far++;
+        }
+      }
+      const i = t.count;
+      if (i >= t.cap) continue;
       _m.compose(r.p, r.q, _s.setScalar(r.s));
-      _m.toArray(sh.mesh.instanceMatrix.array, i * 16);
-      r.tint.toArray(sh.mesh.instanceColor.array, i * 3);
-      const fx = sh.fx.array;
+      _m.toArray(t.mesh.instanceMatrix.array, i * 16);
+      r.tint.toArray(t.mesh.instanceColor.array, i * 3);
+      const fx = t.fx.array;
       fx[i * 4] = r.fade;
       fx[i * 4 + 1] = r.crackNow;
       fx[i * 4 + 2] = r.glow;
       fx[i * 4 + 3] = r.seed;
-      sh.count = i + 1;
+      t.count = i + 1;
       drawn++;
     }
     for (const sh of this.shapes) {
-      sh.mesh.count = sh.count;
-      if (!sh.count) continue;
-      sh.mesh.instanceMatrix.clearUpdateRanges();
-      sh.mesh.instanceMatrix.addUpdateRange(0, sh.count * 16);
-      sh.mesh.instanceMatrix.needsUpdate = true;
-      sh.mesh.instanceColor.clearUpdateRanges();
-      sh.mesh.instanceColor.addUpdateRange(0, sh.count * 3);
-      sh.mesh.instanceColor.needsUpdate = true;
-      sh.fx.clearUpdateRanges();
-      sh.fx.addUpdateRange(0, sh.count * 4);
-      sh.fx.needsUpdate = true;
+      flush(sh);
+      if (sh.far) flush(sh.far);
     }
     this.stats.drawn = drawn;
+    this.stats.far = far;
   }
 
   // Test helper: a rock straight ahead at `dist` metres, not moving; the only kind that hits while testOnly.

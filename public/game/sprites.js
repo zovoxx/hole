@@ -2,7 +2,7 @@
 // with the shape in the alpha channel, so a material colour tints them. A file that fails to load becomes a
 // soft procedural blob (with a console warning), so the game still runs.
 import * as THREE from 'three';
-import { ASSETS_URL } from './loader.js';
+import { assetUrl } from './loader.js';
 
 // Returns { dust: [{ id, texture }], haze: [...], flash: [...] }, each list sorted by id.
 export async function loadSprites(manifest, set, onProgress = () => {}) {
@@ -14,7 +14,7 @@ export async function loadSprites(manifest, set, onProgress = () => {}) {
   await Promise.all(entries.map(async ({ kind, entry }) => {
     let texture;
     try {
-      texture = await loader.loadAsync(new URL(entry[set], ASSETS_URL).href);
+      texture = await loader.loadAsync(assetUrl(entry[set], entry.bytes?.[set]));
     } catch (err) {
       console.warn(`sprite ${entry.id} (${set}): ${err.message ?? 'load failed'}; using a soft blob`);
       texture = softBlob();

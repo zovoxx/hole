@@ -5,6 +5,14 @@ import { GLTFLoader } from 'three/addons/loaders/gltfloader.js';
 
 export const ASSETS_URL = new URL('../assets/', import.meta.url);
 
+// The URL of an asset file, with its size from the manifest as a version (?v=bytes): the files are cached for a
+// long time (public/_headers), and a changed file gets a new URL.
+export function assetUrl(file, bytes) {
+  const url = new URL(file, ASSETS_URL);
+  if (bytes) url.searchParams.set('v', bytes);
+  return url.href;
+}
+
 export async function loadManifest() {
   const res = await fetch(new URL('manifest.json', ASSETS_URL));
   if (!res.ok) throw new Error(`assets/manifest.json: HTTP ${res.status}`);
@@ -24,7 +32,7 @@ export async function loadMeteors(manifest, set, onProgress = () => {}, { groups
   await Promise.all(entries.map(async ({ group, entry }) => {
     let shape;
     try {
-      shape = meshFromGltf(await loader.loadAsync(new URL(entry[set], ASSETS_URL).href));
+      shape = meshFromGltf(await loader.loadAsync(assetUrl(entry[set], entry.bytes?.[set])));
     } catch (err) {
       console.warn(`meteor ${entry.id} (${set}): ${err.message}; using a placeholder`);
       shape = placeholderRock();
