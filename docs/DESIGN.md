@@ -35,9 +35,10 @@ Only these things exist on screen:
 - **Cross:** a thin crosshair, always at the exact center of the screen.
 - **Circle:** a ring that the player moves.
 - **Timer:** top center, counting up (mm:ss.s).
-- **Touch buttons** (phone and iPad): bottom-left has the left and right buttons side by side, and
+- **Touch buttons** (phone and iPad, Extreme controls): bottom-left has the left and right buttons side by side, and
   bottom-right has the up and down buttons stacked. They are large and semi-transparent. Both thumbs work at
-  the same time, so diagonals work.
+  the same time, so diagonals work. With the joystick (the default) there are no buttons: a stick appears under
+  the thumb wherever it drags.
 - **PC:** WASD. A/D is left/right, W/S is up/down.
 
 There is no ship, cockpit, character or anything else. The player is only a point of view.
@@ -47,7 +48,18 @@ effect. They are the player's only stable anchor.
 
 ## 4. Controls (the most important part)
 
-The circle is not direct control. It only tempts the ship.
+**Two control schemes (owner's wish after Contoo 4), chosen in the settings:**
+
+- **Joystick (the default):** push the stick and the ship turns that way, faster the further you push; let go and
+  the stick springs back to the cross and the ship flies straight. On touch, drag anywhere (a floating stick under
+  the thumb); on PC, WASD, a mouse drag or a gamepad. It still has a little weight.
+- **Extreme:** the heavy circle below, the original game. It is shown as extreme difficulty (in red, with an
+  "Extreme" tag on the start and game-over screens) and keeps its own best time.
+- **Sensitivity** (1–10): how fast the joystick turns, or how fast the Extreme circle moves. Even the lowest must
+  make every wall hole and beat a massive meteor's pull.
+
+The rest of this section is the Extreme scheme. In Extreme, the circle is not direct control. It only tempts the
+ship.
 
 1. **The circle moves only while a button is held,** at one constant speed with no acceleration. For
    example, it takes about 0.6 s from the cross to the edge of its range. It has a maximum distance from the
@@ -219,7 +231,8 @@ always at least one gap, sometimes more, wide enough to get through with the hea
 - No visible ship, cockpit or character.
 - No camera rolling on its own and no upside-down feeling.
 - No full-screen flash.
-- No precise joystick feel, no speeding up of the circle, no circle returning to the center.
+- Extreme: no precise joystick feel, no speeding up of the circle, no circle returning to the center. (The joystick
+  scheme, the default since the owner's wish after Contoo 4, is the direct one.)
 - No levels, no visible difficulty jumps, nothing popping in or out.
 - No pixel art.
 - No meteors from behind.

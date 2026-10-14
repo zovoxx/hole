@@ -53,6 +53,13 @@ body[data-mode="run"] #hud, body[data-mode="hit"] #hud, body[data-mode="paused"]
 .pad { position: absolute; display: none; gap: calc(var(--btn) * 0.12); pointer-events: auto;
        bottom: max(calc(var(--u) * 4), env(safe-area-inset-bottom)); }
 body.touch .pad { display: flex; }
+body.touch.joy .pad { display: none; }   /* joystick controls: a floating stick instead of the buttons */
+#stick { position: absolute; left: 0; top: 0; width: calc(var(--r, 48px) * 2); height: calc(var(--r, 48px) * 2);
+         margin: calc(var(--r, 48px) * -1) 0 0 calc(var(--r, 48px) * -1); border-radius: 50%; pointer-events: none;
+         border: 2px solid rgba(210, 220, 240, 0.24); background: rgba(200, 212, 240, 0.05); will-change: transform; }
+#stick[hidden] { display: none; }
+#stick .knob { position: absolute; left: 28%; top: 28%; width: 44%; height: 44%; border-radius: 50%;
+               border: 2px solid rgba(225, 232, 246, 0.5); background: rgba(200, 212, 240, 0.16); will-change: transform; }
 #pad-left { left: max(calc(var(--u) * 4), env(safe-area-inset-left)); flex-direction: row; }
 #pad-right { right: max(calc(var(--u) * 4), env(safe-area-inset-right)); flex-direction: column; }
 .btn { width: var(--btn); height: var(--btn); border-radius: 24%; display: grid; place-items: center;
@@ -130,6 +137,27 @@ body.touch .pad { display: flex; }
 .toggle { min-width: 88px; height: 44px; padding: 0 1em; }
 .toggle[aria-pressed="true"] { background: rgba(140, 170, 255, 0.24); border-color: rgba(170, 190, 255, 0.55); }
 #settings .done { height: 46px; margin-top: 4px; letter-spacing: 0.2em; text-transform: uppercase; }
+.choice { display: flex; gap: 6px; }
+.choice button { height: 44px; padding: 0 0.9em; }
+.choice button[aria-pressed="true"] { background: rgba(140, 170, 255, 0.24); border-color: rgba(170, 190, 255, 0.55); }
+#settings .choice .extreme { color: #ff9a6c; border-color: rgba(255, 120, 80, 0.45); }
+#settings .choice .extreme[aria-pressed="true"] { color: #fff3ea; border-color: rgba(255, 150, 100, 0.9);
+  background: linear-gradient(180deg, rgba(255, 96, 40, 0.6), rgba(180, 28, 16, 0.6));
+  box-shadow: 0 0 16px rgba(255, 80, 30, 0.5); text-shadow: 0 0 8px rgba(255, 130, 70, 0.9); }
+#settings .note { margin: -6px 0 0; font-size: 0.78em; line-height: 1.35; color: var(--dim); letter-spacing: 0.03em; }
+#settings .note.extreme { color: #ff9a6c; }
+/* a short landscape screen (phone on its side): the settings in two columns, so nothing has to scroll */
+@media (max-height: 520px) and (min-width: 560px) {
+  #settings .card { width: min(680px, 94vw); display: grid; grid-template-columns: 1fr 1fr; column-gap: 28px; row-gap: 6px; }
+  #settings h2, #settings .done, #settings .note { grid-column: 1 / -1; }
+  #settings .row { min-height: 40px; }
+}
+
+/* Extreme controls chosen: the start and game-over screens say so */
+.tag-extreme { display: none; margin: 0; color: #ff7a48; font-weight: 600; text-transform: uppercase;
+               font-size: clamp(12px, calc(var(--u) * 2.4), 17px); letter-spacing: 0.55em; padding-left: 0.55em;
+               text-shadow: 0 0 10px rgba(255, 90, 40, 0.9), 0 0 26px rgba(255, 50, 20, 0.55); }
+body.extreme .tag-extreme { display: block; }
 
 #debug { position: fixed; left: 8px; top: 8px; margin: 0; font: 11px/1.45 ui-monospace, Consolas, monospace;
          color: #8d97ad; pointer-events: none; white-space: pre; text-shadow: 0 0 4px #000; z-index: 5; }

@@ -60,6 +60,7 @@
       <div id="btn-left" class="btn"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7"/></svg></div>
       <div id="btn-right" class="btn"><svg viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></div>
     </div>
+    <div id="stick" aria-hidden="true" hidden><div class="knob"></div></div>
     <div id="pad-right" class="pad" aria-hidden="true">
       <div id="btn-up" class="btn"><svg viewBox="0 0 24 24"><path d="m5 15 7-7 7 7"/></svg></div>
       <div id="btn-down" class="btn"><svg viewBox="0 0 24 24"><path d="m5 9 7 7 7-7"/></svg></div>
@@ -74,6 +75,7 @@
 
   <section id="start" class="screen">
     <h1>Hole</h1>
+    <p class="tag-extreme">Extreme</p>
     <p id="start-prompt" class="prompt">Tap to start</p>
     <button class="fs" type="button" hidden>
       <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg><span>Fullscreen</span>
@@ -88,6 +90,7 @@
 
   <section id="over" class="screen">
     <p class="label">You lasted</p>
+    <p class="tag-extreme">Extreme</p>
     <div id="over-time" class="time">00:00.0</div>
     <p id="over-best" class="best"></p>
     <p id="over-prompt" class="prompt">Tap to fly again</p>
@@ -107,6 +110,13 @@
   <section id="settings" aria-label="Settings" hidden>
     <div class="card">
       <h2>Settings</h2>
+      <div class="row"><span>Controls</span>
+        <div class="choice" data-key="controls"><button type="button" data-v="joystick">Joystick</button><button type="button" data-v="extreme" class="extreme">Extreme</button></div>
+      </div>
+      <p class="note" id="controls-note"></p>
+      <div class="row"><span>Sensitivity</span>
+        <div class="stepper" data-key="sensitivity" data-min="1" data-max="10" data-fmt="num"><button type="button" data-d="-1" aria-label="Less sensitive">&minus;</button><output>5</output><button type="button" data-d="1" aria-label="More sensitive">+</button></div>
+      </div>
       <div class="row"><span>Music</span>
         <div class="stepper" data-key="music"><button type="button" data-d="-1" aria-label="Music quieter">&minus;</button><output>80%</output><button type="button" data-d="1" aria-label="Music louder">+</button></div>
       </div>

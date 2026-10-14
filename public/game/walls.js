@@ -16,8 +16,8 @@
 //   there), and walls next to a massive meteor (holes on the side away from it; the pilot fights its pull).
 // Pure math with three.js vectors plus the field's rock API, so it runs in Node tests too.
 import * as THREE from 'three';
-import { WALL, WORLD, FLIGHT, GRAVITY } from './config.js';
-import { stepFlight } from './flight.js';
+import { WALL, WORLD, FLIGHT, GRAVITY, JOYSTICK } from './config.js';
+import { stepFlight, stepJoystick, extremeConfig } from './flight.js';
 import { playerPull, playerRange, inHole } from './gravity.js';
 import { knobs } from './difficulty.js';
 
@@ -69,13 +69,44 @@ export function pilot(f, q, rel, pull, dt) {
   return w < 6 ? circleTo(f, 0, 0, dt) : circleTo(f, (0.3 * wx) / w, (0.3 * wy) / w, dt);
 }
 
+// The joystick version (the default controls): the same aim, with the stick pushed as far as the wanted turn needs
+// (through the stick's dead zone and curve). m = the sensitivity multiplier. Returns the stick { x, y }.
+export function joystickPilot(f, q, rel, pull, m = 1) {
+  _l.copy(rel).applyQuaternion(_qi.copy(q).invert());
+  const ex = Math.atan2(_l.x, -_l.z) / DEG;
+  const ey = Math.atan2(_l.y, -_l.z) / DEG;
+  const wx = 3 * ex - 0.25 * f.wx - pull.gx;
+  const wy = 3 * ey - 0.25 * f.wy - pull.gy;
+  const w = Math.hypot(wx, wy);
+  if (w < 1) return { x: 0, y: 0 };
+  const top = JOYSTICK.maxTurnRate * m;
+  const r = JOYSTICK.deadZone + (1 - JOYSTICK.deadZone) * Math.min(1, w / top) ** (1 / JOYSTICK.expo);
+  return { x: (wx / w) * r, y: (wy / w) * r };
+}
+
+// The player's controls, as the planner needs them (owner's wish after Contoo 4: walls are planned with the scheme and
+// sensitivity the player chose, so every hole can be made with them): how the ship flies one step, what "flying on
+// as you are" holds (Extreme: the circle stays where it is; joystick: the stick held where it is) and how a player
+// steers for a point.
+const STILL = { x: 0, y: 0 };
+export function controlsModel(kind = 'extreme', m = 1) {
+  if (kind === 'joystick') {
+    return { kind, m, step: (f, u, dt) => stepJoystick(f, u, dt, m), idle: (f0) => ({ x: f0.cx, y: f0.cy }),
+             pilot: (f, q, rel, pull) => joystickPilot(f, q, rel, pull, m) };
+  }
+  const cfg = extremeConfig(m);
+  return { kind, m, step: (f, u, dt) => stepFlight(f, u, dt, cfg), idle: () => STILL, pilot };
+}
+const EXTREME = controlsModel();
+
 // Flies from the moment a wall appears (player at the origin, facing q, flight state f, drift) for as long as it
 // takes to pass through the wall's shell (radius L around the origin). hole = the hole to steer through (null:
 // fly on as you are). Returns { ok, through: [m inside each hole's edge, min over the shell], hitRock, end }.
 // opts: speedAt(t), massives (proxies { p0, v, s, pull }), rocks (proxies { p0, v, r }: they only count in the
 // last `rockSeconds` before the shell and inside it, where they would plug the hole; rocks earlier on the way are
 // dodged like any rock), sheet (proxies that count all the way: a massive meteor's escape sheet, flown on through
-// for `after` m past the wall), dt, until (stop after this long and return the heading in `end`), record (keep the
+// for `after` m past the wall), dt, until (stop after this long and return the heading in `end`), controls
+// (controlsModel(), Extreme by default), record (keep the
 // positions inside the shell in `path`: flying on as you are doesn't depend on the holes, so one flight serves every
 // layout, see pathThrough).
 export function flyThrough(start, wall, hole, opts) {
@@ -98,14 +129,16 @@ export function flyThrough(start, wall, hole, opts) {
   const path = opts.record ? [] : null;
   if (hole) target.copy(hole.dir).multiplyScalar(L + 30);
   const tMax = opts.until ?? wall.warn * 2.5 + 2;
+  const ctl = opts.controls ?? EXTREME;
+  const still = ctl.idle(start.f);
   const rockFrom = L - band - opts.speedAt(0) * (opts.rockSeconds ?? 0.8);
   for (let t = 0; t < tMax; t += dt) {
     // massive meteors seen from where the player is now
     for (const m of ms) m.p.copy(m.p0).addScaledVector(m.v, t).sub(P);
     pull = ms.length ? playerPull(ms, fwd, q, driftT) : (driftT.set(0, 0, 0), pull);
-    let held = { x: 0, y: 0 };
-    if (hole && t >= WALL.reaction) held = pilot(f, q, rel.copy(target).sub(P), pull, dt);
-    stepFlight(f, held, dt);
+    let held = still;
+    if (hole && t >= WALL.reaction) held = ctl.pilot(f, q, rel.copy(target).sub(P), pull, dt);
+    ctl.step(f, held, dt);
     drift.lerp(driftT, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
     const ax = (f.wy + pull.gy) * DEG * dt;
     const ay = -(f.wx + pull.gx) * DEG * dt;
@@ -199,6 +232,7 @@ export class Walls {
   constructor(field) {
     this.field = field;
     field.walls = this;
+    this.controls = EXTREME;   // the player's controls (main.js: controlsModel(scheme, sensitivity))
     this.active = [];
     this.reset();
   }
@@ -359,12 +393,14 @@ export class Walls {
       // flying on as you are must pass outside every hole's whole rim (its clear radius plus the biggest rock
       // there: the rocks' collision spheres sit inside their size, so the hole is a little wider than its clear
       // radius) by missBy
-      idlePath ??= flyThrough(start, { L, warn: W, holes: [] }, null, { speedAt, massives: proxies, record: true }).path;
+      idlePath ??= flyThrough(start, { L, warn: W, holes: [] }, null,
+                              { speedAt, massives: proxies, record: true, controls: this.controls }).path;
       if (pathThrough(idlePath, hs).some((x) => x > -(WALL.size[1] + 1 + WALL.missBy) - pr)) return false;
       // each hole can be made, past the rocks already there (and on through an escape sheet)
       for (const h of hs) {
         const near = rocks.filter((r) => segmentDistance(r.p0, h.dir, L) < r.r + r.reachIn + 25);
-        const opts = { speedAt, massives: proxies, rocks: near, ...(sheet.length ? { sheet, after: 110 } : {}) };
+        const opts = { speedAt, massives: proxies, rocks: near, controls: this.controls,
+                       ...(sheet.length ? { sheet, after: 110 } : {}) };
         if (!flyThrough(start, wall, h, opts).ok) return false;
       }
       return true;
@@ -376,7 +412,7 @@ export class Walls {
       // where you will be heading if you fly on as you are for a moment (turning: holes that way are the ones
       // you can make); straight on, that is your heading
       const ahead = check ? flyThrough(start, { L, warn: W, holes: [] }, null,
-                                       { speedAt, massives: proxies, until: WALL.aheadSeconds }).end : null;
+                                       { speedAt, massives: proxies, until: WALL.aheadSeconds, controls: this.controls }).end : null;
       const axis = ahead ? ahead.P.clone().addScaledVector(ahead.fwd, L).normalize() : fwd;
       // next to a massive meteor: first try holes lined up with its escape holes (where they will be)
       for (const m of massives) {

@@ -15,17 +15,20 @@ export function formatTime(t) {
   return `${String(mm).padStart(2, '0')}:${ss.toFixed(1).padStart(4, '0')}`;
 }
 
-export function loadBest() {
+// Best times are kept per controls scheme (Extreme keeps the old key: every run before the joystick was Extreme).
+const bestKey = (controls) => (controls === 'extreme' ? RUN.bestKey : RUN.bestKeyJoystick);
+
+export function loadBest(controls = 'extreme') {
   try {
-    return Number(localStorage.getItem(RUN.bestKey)) || 0;
+    return Number(localStorage.getItem(bestKey(controls))) || 0;
   } catch {
     return 0;
   }
 }
 
-export function saveBest(t) {
+export function saveBest(t, controls = 'extreme') {
   try {
-    localStorage.setItem(RUN.bestKey, String(t));
+    localStorage.setItem(bestKey(controls), String(t));
   } catch { /* private mode: keep it for this visit only */ }
 }
 
@@ -55,10 +58,19 @@ export class UI {
     $('start-prompt').textContent = touch ? 'Tap to start' : 'Press any key or click to start';
     $('over-prompt').textContent = touch ? 'Tap to fly again' : 'Press any key or click to fly again';
     $('paused-prompt').textContent = touch ? 'Tap to continue' : 'Press any key or click to continue';
-    $('start-hint').textContent = touch ? 'Hold the arrows to steer · both thumbs for diagonals'
-      : 'W A S D to steer';
+    this.setControls('joystick');
     this.setupFullscreen();
     this.layout();
+  }
+
+  // The controls scheme ('joystick' | 'extreme'): the touch buttons or the floating stick, the hint, the Extreme tag.
+  setControls(mode) {
+    const joy = mode !== 'extreme';
+    document.body.classList.toggle('joy', joy);
+    document.body.classList.toggle('extreme', !joy);
+    $('start-hint').textContent = joy
+      ? (this.touch ? 'Drag anywhere to steer' : 'W A S D, a mouse drag or a gamepad to steer')
+      : (this.touch ? 'Hold the arrows to steer · both thumbs for diagonals' : 'W A S D to steer');
   }
 
   // Sizes everything from min(width, height); call on every resize.
@@ -148,7 +160,8 @@ export class UI {
       + `rgba(0,0,0,${a.toFixed(2)}) 90%)`;
   }
 
-  // ---- settings: settings = { music, sound, debug } (changed in place); onChange(settings) after every change
+  // ---- settings: settings = { music, sound, debug, controls, sensitivity } (changed in place); onChange(settings)
+  // after every change
   setupSettings(settings, onChange) {
     this.settings = settings;
     const el = this.settingsEl;
@@ -167,9 +180,21 @@ export class UI {
     el.addEventListener('click', (e) => e.stopPropagation());
     for (const st of el.querySelectorAll('.stepper')) {
       const key = st.dataset.key;
+      const min = Number(st.dataset.min ?? 0);
+      const max = Number(st.dataset.max ?? SETTINGS.steps);
       for (const b of st.querySelectorAll('button')) {
         tap(b, () => {
-          settings[key] = Math.min(SETTINGS.steps, Math.max(0, settings[key] + Number(b.dataset.d)));
+          settings[key] = Math.min(max, Math.max(min, settings[key] + Number(b.dataset.d)));
+          this.renderSettings();
+          onChange(settings);
+        });
+      }
+    }
+    for (const ch of el.querySelectorAll('.choice')) {
+      const key = ch.dataset.key;
+      for (const b of ch.querySelectorAll('button')) {
+        tap(b, () => {
+          settings[key] = b.dataset.v;
           this.renderSettings();
           onChange(settings);
         });
@@ -195,10 +220,22 @@ export class UI {
     const s = this.settings;
     for (const st of this.settingsEl.querySelectorAll('.stepper')) {
       const v = s[st.dataset.key];
-      st.querySelector('output').textContent = v ? `${Math.round((v / SETTINGS.steps) * 100)}%` : 'Off';
-      st.querySelector('[data-d="-1"]').disabled = v <= 0;
-      st.querySelector('[data-d="1"]').disabled = v >= SETTINGS.steps;
+      const min = Number(st.dataset.min ?? 0);
+      const max = Number(st.dataset.max ?? SETTINGS.steps);
+      st.querySelector('output').textContent = st.dataset.fmt === 'num' ? String(v)
+        : v ? `${Math.round((v / SETTINGS.steps) * 100)}%` : 'Off';
+      st.querySelector('[data-d="-1"]').disabled = v <= min;
+      st.querySelector('[data-d="1"]').disabled = v >= max;
     }
+    for (const ch of this.settingsEl.querySelectorAll('.choice')) {
+      for (const b of ch.querySelectorAll('button')) b.setAttribute('aria-pressed', String(s[ch.dataset.key] === b.dataset.v));
+    }
+    const note = $('controls-note');
+    const extreme = s.controls === 'extreme';
+    note.classList.toggle('extreme', extreme);
+    note.textContent = extreme
+      ? 'Extreme difficulty: the circle only tempts a heavy ship. It stays where you leave it; turning takes time.'
+      : 'Push the stick and the ship turns; let go and it flies straight. Sensitivity sets how fast it turns.';
     const t = this.settingsEl.querySelector('.toggle');
     t.setAttribute('aria-pressed', String(!!s.debug));
     t.textContent = s.debug ? 'On' : 'Off';

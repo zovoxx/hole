@@ -205,6 +205,23 @@
     spread: walls next to a massive meteor (23–30 of 30 against 24; now 40 runs, ≥ 75%), a swarm of 7–10 sometimes
     losing one member (≥ 85%), flying straight through a wall by luck (1–4 of 40; ≤ 10%). Check sheet `docs/checks/contoo4_ship.jpg` from `tools/check_ship.mjs`.
 
+- **Controls and sensitivity** (2026-10-14, owner's wish after Contoo 4): a **Joystick** control, now the default,
+  and the original heavy circle kept as **Extreme**; a **Sensitivity** setting (1–10) for both.
+  - Joystick: push and the ship turns (more push, faster), let go and it springs back and flies straight. Touch:
+    drag anywhere (a floating stick under the thumb, its base follows past the edge); PC: WASD (eased in and out),
+    a mouse drag, or a gamepad (left stick or d-pad; A / Start starts and restarts). No touch buttons.
+  - Extreme: as before; in the settings it is red and glows, the start and game-over screens say "EXTREME", and it
+    keeps its own best time (the old best stays with Extreme, where it was set).
+  - Sensitivity: joystick top turn 71 … 122 °/s (90 at 5); Extreme circle speed ×0.79 … ×1.35.
+  - Fairness: walls now plan their holes with the player's own controls and sensitivity. Audit: the joystick makes
+    every hole at sensitivity 1, 5 and 10 (0 s, 1 min, 10 min: 270 of 270) and gets out through escape holes at
+    sensitivity 1 (89 of 90); even the lowest sensitivity out-turns a massive meteor's pull. (A first, wider
+    sensitivity range went down to 51 °/s: then 11 of 30 late walls couldn't be made, so the range was narrowed.)
+  - Tests: `test_world` (joystick model, sensitivity range), `test_game` (joystick by keys, mouse drag and touch,
+    sensitivity, Extreme shown and its own best, saved settings; the earlier checks run with `?controls=extreme`),
+    `audit` (above). All pass. The pop-in check in `test_world` counted a big rock's moon arriving at fade 0 just
+    inside its distance line (seen 2 times in 80 runs, invisible in the fog); its line moved out by one fade band.
+
 ## Next
 
 - **Play it on the deployed site and tell me how it feels** (PHASES Contoo 4 "Done when"): five runs in a row on
@@ -270,6 +287,14 @@
   - Big rocks pull other meteors only weakly (15%), their own moons fully; a massive meteor pulls the field at
     60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
     direction", never "you can't get out").
+
+- Controls judgement calls (tell me if any is wrong):
+  - The joystick is a floating stick (wherever your thumb lands), not a fixed one in a corner; the stick's base
+    follows your thumb past the edge.
+  - Joystick drags move the thumb a little; on iPad Safari in fullscreen that may bring the fullscreen warning more
+    often than the still buttons of Extreme did (Contoo 1 wish). Tell me if it does.
+  - Best times are kept per control: the joystick's best starts empty; your earlier best is Extreme's.
+  - Sensitivity also changes Extreme (how fast the circle moves); 5 is the original.
 
 - Contoo 4 judgement calls (tell me if any is wrong):
   - A run pauses when you leave the page (the design has no pause; coming back mid-flight crashed you into

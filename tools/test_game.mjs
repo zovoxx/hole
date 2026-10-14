@@ -62,7 +62,8 @@ function check(ok, what, detail = '') {
   if (!ok) failures++;
 }
 
-async function openGame(browser, base, contextOptions, query = '?debug') {
+// (the Contoo 1–4 checks are about the Extreme controls, the heavy circle; the joystick has its own checks)
+async function openGame(browser, base, contextOptions, query = '?debug&controls=extreme') {
   const context = await browser.newContext(contextOptions);
   const page = await context.newPage();
   const problems = [];
@@ -410,6 +411,94 @@ async function desktop(browser, base) {
   await context.close();
 }
 
+// Joystick controls (the default since the owner's wish after Contoo 4): keys, a mouse drag and a thumb drag push a
+// stick that springs back; sensitivity scales the turn; Extreme is the heavy circle, shown as such, with its own best.
+async function joystickDesktop(browser, base) {
+  console.log('joystick (default controls), desktop 1280x720');
+  const { context, page, problems } = await openGame(browser, base, { viewport: { width: 1280, height: 720 } }, '?debug');
+  const d0 = await page.evaluate(() => ({ controls: hole.controls, joy: document.body.classList.contains('joy'),
+    tag: getComputedStyle(document.querySelector('#start .tag-extreme')).display, hint: document.getElementById('start-hint').textContent,
+    sens: hole.settings.sensitivity }));
+  check(d0.controls === 'joystick' && d0.joy && d0.tag === 'none' && d0.sens === 5, 'the joystick is the default control (no Extreme tag)',
+    JSON.stringify(d0));
+  // sensitivity 7 in the settings
+  await page.click('#start .gear');
+  await page.click('#settings .stepper[data-key="sensitivity"] [data-d="1"]');
+  await page.click('#settings .stepper[data-key="sensitivity"] [data-d="1"]');
+  await page.click('#settings .done');
+  await page.waitForTimeout(200);
+  await page.keyboard.press('KeyK');   // start
+  await page.keyboard.down('KeyD');
+  const k1 = await page.evaluate(() => { hole.advance(0.12); const a = hole.flight.cx; hole.advance(0.6); return { mid: a, cx: hole.flight.cx, wx: hole.flight.wx }; });
+  await page.keyboard.up('KeyD');
+  const k2 = await page.evaluate(() => { hole.advance(0.12); const cx = hole.flight.cx; hole.advance(0.3); return { cx, wx: hole.flight.wx }; });
+  const top = 90 * 2 ** (2 / 11.5);   // JOYSTICK.maxTurnRate × the sensitivity 7 multiplier
+  check(k1.mid > 0.4 && k1.mid < 0.9 && k1.cx === 1 && Math.abs(k1.wx - top) < 1 && k2.cx === 0 && Math.abs(k2.wx) < 1,
+    'keys push the stick to the edge in ~0.18 s, the turn follows (sensitivity 7: faster), let go and it springs back and stops',
+    `stick ${k1.mid.toFixed(2)} after 0.12 s, turn ${k1.wx.toFixed(0)} °/s (expected ${top.toFixed(0)}); released: stick ${k2.cx}, turn ${k2.wx.toFixed(1)} °/s`);
+  // a mouse drag is a stick too (full deflection 11% of the short side from where it went down)
+  await page.mouse.move(900, 400);
+  await page.mouse.down();
+  await page.mouse.move(900, 400 - 0.11 * 720 * 0.5);
+  const m1 = await page.evaluate(() => { hole.advance(0.4); return { cy: hole.flight.cy, wy: hole.flight.wy, shown: !document.getElementById('stick').hidden }; });
+  await page.mouse.up();
+  const m2 = await page.evaluate(() => { hole.advance(0.3); return { cy: hole.flight.cy, wy: hole.flight.wy, shown: !document.getElementById('stick').hidden }; });
+  check(Math.abs(m1.cy - 0.5) < 0.03 && m1.wy > 10 && m1.wy < top * 0.5 && m1.shown && m2.cy === 0 && Math.abs(m2.wy) < 1 && !m2.shown,
+    'a mouse drag up halfway turns up gently (the stick shows under it); let go and it is gone',
+    `${JSON.stringify(m1)} -> ${JSON.stringify(m2)}`);
+  // game over, then Extreme in the settings: shown as Extreme, its own best time, saved
+  await page.evaluate(() => { hole.setTestOnly(true); hole.placeAhead(25, 5); hole.advance(2.5); });
+  const joyBest = await page.evaluate(() => hole.best);
+  await page.waitForTimeout(500);
+  await page.click('#over .gear');
+  await page.click('#settings .choice [data-v="extreme"]');
+  await page.click('#settings .done');
+  const e1 = await page.evaluate(() => ({ controls: hole.controls, best: hole.best, mode: hole.mode,
+    tag: getComputedStyle(document.querySelector('#over .tag-extreme')).display,
+    glow: getComputedStyle(document.querySelector('#settings .choice .extreme')).boxShadow,
+    saved: JSON.parse(localStorage.getItem('hole.settings')), keys: [localStorage.getItem('hole.best'), localStorage.getItem('hole.best.joystick')] }));
+  check(e1.controls === 'extreme' && e1.mode === 'over' && e1.tag === 'block' && e1.glow !== 'none' && e1.best === 0 && joyBest > 0
+        && e1.saved.controls === 'extreme' && e1.saved.sensitivity === 7 && e1.keys[0] === null && Number(e1.keys[1]) > 0,
+  'Extreme in the settings: it glows, the screens say EXTREME, it keeps its own best time; controls and sensitivity are saved',
+  JSON.stringify({ ...e1, glow: undefined }));
+  check(problems.length === 0, 'no console errors or failed requests', problems.slice(0, 5).join(' | '));
+  await context.close();
+}
+
+async function joystickMobile(browser, base) {
+  console.log('joystick (default controls), iPhone portrait');
+  const d = devices['iPhone 13'];
+  const { context, page, problems } = await openGame(browser, base, { ...d }, '?debug');
+  const cdp = await context.newCDPSession(page);
+  const R = 0.11 * Math.min(d.viewport.width, d.viewport.height);
+  const p0 = await page.evaluate(() => ({ pads: getComputedStyle(document.getElementById('pad-left')).display,
+    stick: document.getElementById('stick').hidden, hint: document.getElementById('start-hint').textContent }));
+  // the tap that starts the run is the stick's base; dragging right steers right
+  const x0 = 200;
+  const y0 = 560;
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0, id: 1 }] });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + R, y: y0, id: 1 }] });
+  await sleep(50);
+  const t1 = await page.evaluate(() => { hole.advance(0.5); return { mode: hole.mode, cx: hole.flight.cx, wx: hole.flight.wx, stick: !document.getElementById('stick').hidden }; });
+  // past the edge: the base follows, so the way back is short
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + 3 * R, y: y0, id: 1 }] });
+  await sleep(50);
+  await page.evaluate(() => hole.advance(1 / 60));
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + 2 * R, y: y0, id: 1 }] });
+  await sleep(50);
+  const t2 = await page.evaluate(() => { hole.advance(1 / 60); return { cx: hole.flight.cx }; });
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await sleep(50);
+  const t3 = await page.evaluate(() => { hole.advance(0.3); return { cx: hole.flight.cx, wx: hole.flight.wx, stick: !document.getElementById('stick').hidden,
+    scale: window.visualViewport ? visualViewport.scale : 1 }; });
+  check(p0.pads === 'none' && p0.stick && /Drag/.test(p0.hint) && t1.mode === 'run' && t1.cx > 0.95 && t1.wx > 80 && t1.stick
+        && Math.abs(t2.cx) < 0.05 && t3.cx === 0 && Math.abs(t3.wx) < 1 && !t3.stick && t3.scale === 1,
+  'touch: no buttons; the tap that starts is the stick, a drag steers, the base follows past the edge, let go and it is gone',
+  `${JSON.stringify(p0)} ${JSON.stringify(t1)} back ${t2.cx.toFixed(2)} ${JSON.stringify(t3)}`);
+  check(problems.length === 0, 'no console errors or failed requests', problems.slice(0, 5).join(' | '));
+  await context.close();
+}
+
 // Contoo 4: a browser that can't start WebGL gets a message instead of an endless loading bar.
 async function noWebgl(base) {
   console.log('desktop without WebGL');
@@ -546,6 +635,8 @@ const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--ena
 try {
   if (!ONLY || ONLY === 'desktop') await desktop(browser, base);
   if (!ONLY || ONLY === 'desktop') await noWebgl(base);
+  if (!ONLY || ONLY === 'desktop' || ONLY === 'joystick') await joystickDesktop(browser, base);
+  if (!ONLY || ONLY === 'mobile' || ONLY === 'joystick') await joystickMobile(browser, base);
   if (!ONLY || ONLY === 'mobile') {
     await mobile(browser, base, 'iphone', 'iPhone 13', false);
     await mobile(browser, base, 'iphone', 'iPhone 13', true);

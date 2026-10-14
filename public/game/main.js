@@ -4,10 +4,10 @@ import { SPACE_COLOR, WORLD, CAMERA, LIGHTS, RUN, GRAVITY, SHAKE, DEEP } from '.
 import { pickAssetSet, pixelRatio, hasTouch } from './device.js';
 import { loadManifest, loadMeteors } from './loader.js';
 import { loadSprites } from './sprites.js';
-import { createFlight, resetFlight, stepFlight, strain } from './flight.js';
+import { createFlight, resetFlight, stepFlight, stepJoystick, sensitivity, extremeConfig, strain } from './flight.js';
 import { knobs } from './difficulty.js';
 import { MeteorField } from './world.js';
-import { Walls } from './walls.js';
+import { Walls, controlsModel } from './walls.js';
 import { createStars, Motes, Murk } from './space.js';
 import { Fx } from './fx.js';
 import { Input } from './input.js';
@@ -23,15 +23,36 @@ const set = pickAssetSet();
 const touch = hasTouch() || params.get('touch') === '1';
 
 const settings = loadSettings();
+// ?controls=extreme|joystick: for tests (not saved)
+if (params.get('controls') === 'extreme' || params.get('controls') === 'joystick') settings.controls = params.get('controls');
 const ui = new UI({ touch });
 const input = new Input(ui.buttons, onPress);
 input.touchEnabled = touch;
 const sound = new GameSound(set, settings);
+let controls = '';      // 'joystick' (default) or 'extreme' (the heavy circle of DESIGN §4)
+let sens = 1;           // the sensitivity as a multiplier
+let extremeFlight = extremeConfig(1);
 ui.setupSettings(settings, (s) => {
   saveSettings(s);
   sound.applyVolumes();
   showDebug(s.debug);
+  applyControls();
 });
+
+// The controls scheme and sensitivity from the settings (only ever changed between runs).
+function applyControls() {
+  sens = sensitivity(settings.sensitivity);
+  extremeFlight = extremeConfig(sens);
+  if (walls) walls.controls = controlsModel(settings.controls, sens);  // holes planned for these controls
+  if (settings.controls === controls) return;
+  controls = settings.controls;
+  input.mode = controls;
+  input.clear();
+  ui.setControls(controls);
+  input.measure();
+  best = loadBest(controls);
+  ui.setBest(best);
+}
 
 // ---- renderer, scene, camera (the camera never uses lookAt: orientation is a quaternion turned by pitch/yaw)
 const canvas = document.getElementById('view');
@@ -100,7 +121,7 @@ let modeTime = 0;      // seconds since the mode began
 let speed = 40;
 let k = knobs(0);      // the difficulty now
 let deep = -1;         // how deep space looks (knobs().deep), applied when it changes
-let best = loadBest();
+let best = 0;           // the best time with the current controls (applyControls)
 let lastHit = null;
 let openT = 1;         // view opening after a restart (0 -> 1)
 let last = performance.now();
@@ -143,7 +164,7 @@ async function boot() {
   const k1 = knobs(60);
   walls.warmUp({ runTime: 60, k: k1, speed: k1.speed, q, flight, drift, fwd, frustum });
   renderer.compile(scene, camera);
-  ui.setBest(best);
+  applyControls();
   showDebug(settings.debug);
   setMode('start');
   renderer.setAnimationLoop(frame);
@@ -235,7 +256,7 @@ function frame(now) {
 
 function tick(dt) {
   modeTime += dt;
-  const held = input.update();
+  const held = input.update(dt);
 
   if (mode === 'start') {
     speed = WORLD.attractSpeed;
@@ -246,7 +267,8 @@ function tick(dt) {
     speed = k.speed;
     field.setDifficulty(k);
     setDeep(k.deep);
-    stepFlight(flight, held, dt);
+    if (controls === 'extreme') stepFlight(flight, held, dt, extremeFlight);
+    else stepJoystick(flight, input.stick, dt, sens);
     // a massive meteor's pull: an extra turn toward it and a sideways drag (gravity.js)
     pull = field.playerPull(fwd, q, driftTarget);
     drift.lerp(driftTarget, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
@@ -364,7 +386,7 @@ function onHit(rock) {
   const isNew = runTime > best;
   if (isNew) {
     best = runTime;
-    saveBest(best);
+    saveBest(best, controls);
   }
   ui.gameOver(runTime, best, isNew);
   ui.setBest(best);
@@ -446,6 +468,7 @@ function debugLine(now) {
 
 window.hole = {
   get mode() { return mode; },
+  get controls() { return controls; },
   get modeTime() { return modeTime; },
   get time() { return runTime; },
   get best() { return best; },

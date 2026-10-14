@@ -27,7 +27,7 @@ export const mod = {
 export const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/manifest.json'), 'utf8'));
 
 const { WORLD, CAMERA, GRAVITY } = mod.config;
-const { createFlight, resetFlight, stepFlight } = mod.flight;
+const { createFlight, resetFlight, stepFlight, stepJoystick, sensitivity, extremeConfig } = mod.flight;
 const { knobs } = mod.difficulty;
 const DEG = Math.PI / 180;
 
@@ -56,15 +56,17 @@ export const FOG = Math.sqrt(-Math.log(WORLD.fogAtRadius)) / WORLD.radius;
 export const fogVisibility = (d) => Math.exp(-((FOG * Math.max(0, d)) ** 2));
 
 // A whole run as main.js plays it (mode 'run'): every frame the difficulty, the flight model, the pull, the field
-// and the walls. step(held) runs one frame and returns the rock that hit you (or null).
-export function game({ aspect = 16 / 9, dt = 1 / 60 } = {}) {
+// and the walls. step(held) runs one frame and returns the rock that hit you (or null). controls: 'extreme' (held =
+// the held directions) or 'joystick' (held = the stick); sens = the sensitivity step (1-10).
+export function game({ aspect = 16 / 9, dt = 1 / 60, controls = 'extreme', sens = 5 } = {}) {
   const field = new mod.world.MeteorField(new THREE.Scene(), shapes());
   const walls = new mod.walls.Walls(field);
+  walls.controls = mod.walls.controlsModel(controls, sensitivity(sens));
   const cam = new THREE.PerspectiveCamera(fovFor(aspect), aspect, CAMERA.near, CAMERA.far);
   cam.updateProjectionMatrix();
   field.setView(cam);
   const g = {
-    field, walls, cam, dt, runTime: 0, k: knobs(0), speed: 40,
+    field, walls, cam, dt, runTime: 0, k: knobs(0), speed: 40, controls, m: sensitivity(sens),
     f: createFlight(), q: new THREE.Quaternion(), fwd: new THREE.Vector3(0, 0, -1), frustum: new THREE.Frustum(),
     drift: new THREE.Vector3(), pull: { gx: 0, gy: 0, strength: 0 }, move: new THREE.Vector3(),
   };
@@ -99,7 +101,8 @@ export function game({ aspect = 16 / 9, dt = 1 / 60 } = {}) {
     g.k = knobs(g.runTime);
     g.speed = g.k.speed;
     field.setDifficulty(g.k);
-    stepFlight(g.f, held, dt);
+    if (controls === 'joystick') stepJoystick(g.f, held, dt, g.m);
+    else stepFlight(g.f, held, dt, extremeConfig(g.m));
     g.pull = field.playerPull(g.fwd, g.q, driftT);
     g.drift.lerp(driftT, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
     const ax = (g.f.wy + g.pull.gy) * DEG * dt;

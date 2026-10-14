@@ -117,8 +117,8 @@ if (want('collision')) {
 // ---- 2. walls over the whole difficulty range (an empty field and the real wall code, as in test_world.mjs)
 
 // An empty stage at run time t: no field rocks, no automatic massive meteors, walls on demand.
-function stage(t) {
-  const g = game();
+function stage(t, opts = {}) {
+  const g = game(opts);
   g.start();
   const { field } = g;
   field.clear();
@@ -144,8 +144,8 @@ function stage(t) {
   return g;
 }
 
-function wallRun(t, { turning = false, steer = true } = {}) {
-  const g = stage(t);
+function wallRun(t, { turning = false, steer = true, controls = 'extreme', sens = 5 } = {}) {
+  const g = stage(t, { controls, sens });
   g.noWallExploders = true;   // (an exploder blows its own gap)
   if (turning) {
     g.f.cx = (Math.random() * 2 - 1) * 0.4;
@@ -158,16 +158,18 @@ function wallRun(t, { turning = false, steer = true } = {}) {
   // as in a run: ask again every 0.25 s while flying on (up to WALL.giveUp)
   while (!w && waited <= WALL.giveUp) {
     w = g.wall();
-    if (!w) for (let i = 0; i < 15; i++, waited += dt) g.step();
+    if (!w) for (let i = 0; i < 15; i++, waited += dt) g.step(controls === 'joystick' ? { x: g.f.cx, y: g.f.cy } : undefined);
   }
   if (!w) return { out: 'none' };
   const hole = w.holes[Math.floor(Math.random() * w.holes.length)];
   const target = new THREE.Vector3();
+  // until it reacts, the player keeps doing what they did: buttons let go (Extreme: the circle stays), the stick held
+  const before = controls === 'joystick' ? { x: g.f.cx, y: g.f.cy } : { x: 0, y: 0 };
   for (let i = 0; i < 60 * (w.warn * 2.5 + 2); i++) {
-    let held = { x: 0, y: 0 };
+    let held = before;
     if (steer && i * dt >= WALL.reaction) {
       target.copy(w.center).addScaledVector(hole.dir, w.L + 30);
-      held = pilot(g.f, g.q, target, g.pull, dt);
+      held = g.walls.controls.pilot(g.f, g.q, target, g.pull, dt);
     }
     const hit = g.step(held);
     if (hit) return { out: hit.wall ? 'wall' : 'other', w, waited };
@@ -192,19 +194,41 @@ if (want('walls')) {
       if (r.waited > 0.01) late++;
     }
     const placed = N - steer.none;
-    const ok = steer.through >= placed * 0.95 && placed >= N * 0.85 && idle.through <= Math.max(1, N * 0.08);
+    const ok = steer.through >= placed * 0.95 && placed >= N * 0.85 && idle.through <= Math.max(2, N * 0.1);
     if (!ok) allOk = false;
     console.log(`  ${ok ? 'ok ' : 'BAD'}  ${String(t).padStart(4)} s  ${knobs(t).speed.toFixed(0)} m/s warn ${knobs(t).wallWarn.toFixed(1)} s:`
       + ` pilot through ${steer.through}/${placed} (wall ${steer.wall}, circling ${steer.circling}), placed ${placed}/${N} (${late} after a wait),`
       + ` flying on: ${idle.through} slipped through a gap of ${N - idle.none}`);
   }
   check(allOk, 'every wall over 0 s ... 20 min: placed, no hole on your path, every hole made by a late-reacting pilot');
+  // the joystick (the default controls): the same walls, steered with the stick, at the lowest, middle and highest
+  // sensitivity (the holes are planned for the heavy Extreme controls; the joystick must make them too)
+  let joyOk = true;
+  const joyLines = [];
+  for (const sens of [1, 5, 10]) {
+    const row = [];
+    for (const t of QUICK ? [0, 600] : [0, 60, 600]) {
+      const res = { wall: 0, through: 0, none: 0, other: 0, circling: 0 };
+      const turn = { through: 0, n: 0 };
+      for (let i = 0; i < N; i++) {
+        const out = wallRun(t, { turning: i % 2 === 1, controls: 'joystick', sens }).out;
+        res[out]++;
+        if (i % 2 === 1 && out !== 'none') { turn.n++; if (out === 'through') turn.through++; }
+      }
+      const placed = N - res.none;
+      if (res.through < placed * 0.95) joyOk = false;
+      row.push(`${t} s ${res.through}/${placed} (turning ${turn.through}/${turn.n})`);
+    }
+    joyLines.push(`sensitivity ${sens}: ${row.join(', ')}`);
+  }
+  check(joyOk, 'the joystick makes every hole too, at the lowest, middle and highest sensitivity', joyLines.join('; '));
 }
 
 // ---- 3. escape gaps over the whole range
 
-function escapeRun(t) {
-  const g = stage(t);
+function escapeRun(t, { controls = 'extreme', sens = 5 } = {}) {
+  const g = stage(t, { controls, sens });
+  const joy = controls === 'joystick';
   const m = g.field.spawnMassive(g.fwd, { s: 16 + Math.random() * 14 });
   m.pull = g.k.pull;
   const hole = m.holes[0];
@@ -215,7 +239,14 @@ function escapeRun(t) {
     let held = { x: 0, y: 0 };
     if (g.field.rocks.includes(m)) {
       target.copy(m.p).add(hole.offset).addScaledVector(hole.axis, 30);
-      if (target.dot(g.fwd) > 5) {
+      if (joy && target.dot(g.fwd) > 5) {
+        held = g.walls.controls.pilot(g.f, g.q, target, g.pull, dt);
+      } else if (joy && g.pull.strength > 0.02) {   // past the hole: the stick pushed away from the pull
+        const w = Math.hypot(g.pull.gx, g.pull.gy);
+        held = { x: -g.pull.gx / w, y: -g.pull.gy / w };
+      } else if (joy) {
+        held = { x: 0, y: 0 };
+      } else if (target.dot(g.fwd) > 5) {
         l.copy(target).applyQuaternion(qi.copy(g.q).invert());
         const ex = Math.atan2(l.x, -l.z) / DEG;
         const ey = Math.atan2(l.y, -l.z) / DEG;
@@ -251,6 +282,15 @@ if (want('escape')) {
       + ` out ${res.free}/${N}; hit massive ${res.massive}, swarm ${res.swarm}, sheet ${res.sheet}`);
   }
   check(allOk, 'steering through an escape hole gets you out over 20 s ... 20 min (≥ 90%)');
+  const joyRes = [];
+  let joyOk = true;
+  for (const t of QUICK ? [600] : [20, 600, 1200]) {
+    const res = { massive: 0, swarm: 0, sheet: 0, free: 0 };
+    for (let i = 0; i < N; i++) res[escapeRun(t, { controls: 'joystick', sens: 1 })]++;
+    if (res.free < N * 0.9) joyOk = false;
+    joyRes.push(`${t} s ${res.free}/${N} (massive ${res.massive}, swarm ${res.swarm}, sheet ${res.sheet})`);
+  }
+  check(joyOk, 'the joystick at its lowest sensitivity gets out through an escape hole too (≥ 90%)', joyRes.join('; '));
 }
 
 // ---- 4. whole runs flown by bots: was every rock that killed you in sight long enough?

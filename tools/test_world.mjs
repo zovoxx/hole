@@ -64,6 +64,30 @@ console.log('flight');
   check(h.ty === 0, 'no pull inside the dead zone');
 }
 
+console.log('joystick controls');
+{
+  const { stepJoystick, sensitivity } = await game('flight.js');
+  const { JOYSTICK, SENSITIVITY } = await game('config.js');
+  const f = createFlight();
+  for (let i = 0; i < 30; i++) stepJoystick(f, { x: 1, y: 0 }, dt);
+  const full = f.wx;
+  stepJoystick(f, { x: 0, y: 0 }, dt);
+  const centred = f.cx === 0 && f.tx === 0;
+  for (let i = 0; i < 20; i++) stepJoystick(f, { x: 0, y: 0 }, dt);
+  const stopped = f.wx;
+  const g = createFlight();
+  for (let i = 0; i < 60; i++) stepJoystick(g, { x: 0.5, y: 0 }, dt);
+  check(Math.abs(full - JOYSTICK.maxTurnRate) < 1e-6 && centred && stopped === 0 && g.wx > 20 && g.wx < 0.45 * JOYSTICK.maxTurnRate,
+    'joystick: full push turns at its top rate in ~0.2 s, half a push turns gently, let go and the turn stops',
+    `full ${full.toFixed(0)} °/s, half ${g.wx.toFixed(0)} °/s, released ${stopped} °/s`);
+  const lo = JOYSTICK.maxTurnRate * sensitivity(SENSITIVITY.min);
+  const hi = JOYSTICK.maxTurnRate * sensitivity(SENSITIVITY.max);
+  const pullMax = GRAVITY.player.turnMax * knobs(1e5).pull * 0.36;   // (the strongest pull beside you, halfway in)
+  check(sensitivity(SENSITIVITY.base) === 1 && lo >= FLIGHT.maxTurnRate && lo > pullMax,
+    'sensitivity: even the lowest joystick turns as fast as Extreme and out-turns a massive meteor\'s pull',
+    `${lo.toFixed(0)} ... ${hi.toFixed(0)} °/s (Extreme ${FLIGHT.maxTurnRate}, pull at most ~${pullMax.toFixed(0)} °/s)`);
+}
+
 console.log('difficulty');
 {
   let prev = knobs(0);
@@ -122,8 +146,9 @@ function simulate({ turn = 0, speed = 40, gap = 8, seconds = 45, aspect = 16 / 9
     for (const r of field.rocks) {
       if (known.has(r)) continue;
       known.add(r);
-      // a new rock in view must appear at the far edge, faded out
-      if (field.visible(r, frustum) && (r.fade > 0 || r.p.length() < R - WORLD.fadeBand - 1)) pops++;
+      // a new rock in view must appear at the far edge, faded out (a big rock's moon arriving with it, fade 0, can be
+      // a little nearer: still in the fog's last few percent)
+      if (field.visible(r, frustum) && (r.fade > 0 || r.p.length() < R - 2 * WORLD.fadeBand)) pops++;
       // nothing comes from behind: every rock moves backward relative to the player
       if (r.v.dot(fwd) >= speed) behind++;
     }

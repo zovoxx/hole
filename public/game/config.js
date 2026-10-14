@@ -66,6 +66,26 @@ export const FLIGHT = {
   playerRadius: 0.5,    // m, the player's collision sphere
 };
 
+// Controls (owner's wish after Contoo 4): two schemes, chosen in the settings.
+// - Joystick (the default): the stick's direction and how far it is pushed set the turn directly (with a little
+//   weight), and it springs back to the cross when let go. Touch: drag anywhere (a floating stick); keys push it
+//   to the edge in keyIn s and let it spring back in keyOut s; a gamepad's left stick.
+// - Extreme: the heavy circle of DESIGN §4 (FLIGHT), the original game.
+// Sensitivity (steps 1-10, 5 = these values): m = 2^((step - 5) / perDouble), 0.79 ... 1.35. Joystick: the top turn
+// rate and how fast the turn follows times m (71 ... 122 °/s: even the lowest out-turns a massive meteor's pull, 64
+// °/s at most). Extreme: the circle moves m times as fast. Walls plan their holes with the chosen controls.
+export const JOYSTICK = {
+  maxTurnRate: 90,      // deg/s at full deflection (sensitivity 5)
+  turnAccel: 520,       // deg/s²: light, but still a ship
+  deadZone: 0.06,
+  expo: 1.5,            // turn grows with deflection^expo: fine control near the cross
+  keyIn: 0.18,          // s: a held key pushes the stick to the edge in this long...
+  keyOut: 0.1,          // ...and it springs back to the cross in this long
+  radius: 0.11,         // touch: full deflection this far from the thumb's stick base (share of min(width, height))
+  padDeadZone: 0.15,    // gamepad stick
+};
+export const SENSITIVITY = { min: 1, max: 10, base: 5, perDouble: 11.5 };
+
 // Camera: the short screen side always shows fovShort degrees; the long side at most fovLongMax.
 export const CAMERA = { fovShort: 60, fovLongMax: 100, near: 0.3, far: 1400 };
 
@@ -148,7 +168,8 @@ export const RUN = {
   restartLock: 0.45,    // s after the game-over screen appears before a tap/key restarts (panic taps)
   pauseLock: 0.3,       // s after coming back to a paused run before a tap/key continues it
   openSeconds: 0.5,     // the view opening again at a restart
-  bestKey: 'hole.best',
+  bestKey: 'hole.best',               // Extreme (every run before the joystick was Extreme)
+  bestKeyJoystick: 'hole.best.joystick',
 };
 
 // ---- Contoo 2: danger (DESIGN §6–7, TECH "Gravity, swarms and escape gaps")
@@ -282,5 +303,6 @@ export const SOUND = {
 export const SETTINGS = {
   key: 'hole.settings',
   steps: 10,                                      // volume steps (0 = off ... 10)
-  defaults: { music: 8, sound: 8, debug: false }, // 8 = the mixed level (MUSIC.volume, SOUND.volume)
+  defaults: { music: 8, sound: 8, debug: false,   // 8 = the mixed level (MUSIC.volume, SOUND.volume)
+              controls: 'joystick', sensitivity: 5 },
 };

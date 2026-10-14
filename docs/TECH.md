@@ -106,7 +106,28 @@ something works better, and update this file when you do. All numbers are starti
 | Mid-far | 150–250 | Shapes and washed-out colors, no tells |
 | Far | 250–300 | Ghosts in the fog; meteors arrive and fade in at 275–300 (`WORLD.radius` 300) |
 
-## Flight model
+## Controls (owner's wish after Contoo 4)
+
+Two schemes in the settings (`settings.controls`, default `joystick`), and a sensitivity (`settings.sensitivity`,
+1–10, default 5: m = 2^((step − 5) / 11.5), 0.79 … 1.35; `SENSITIVITY`, `sensitivity()` in `flight.js`).
+
+- **Joystick** (`stepJoystick`, `JOYSTICK`): stick s, |s| ≤ 1, springs back to 0 when let go. The circle shows the
+  stick. Target turn = direction × ((|s| − 0.06) / 0.94)^1.5 × 90 °/s × m (fine control near the cross); the turn
+  follows at 520 × m °/s² (light, still a ship). Top turn 71 … 122 °/s: even the lowest beats Extreme's 70 °/s
+  and a massive meteor's strongest pull (~64 °/s). Inputs (`input.js`): a floating touch / mouse stick (base where
+  the pointer went down, full push 11% of the short side away, the base follows past the edge so turning back is
+  quick; drawn under the thumb), else a gamepad's left stick or d-pad (A / Start = a press), else the keys (pushed
+  to the edge in 0.18 s, back in 0.1 s). No touch buttons.
+- **Extreme** (`stepFlight`, `FLIGHT`): the heavy circle below, with the circle m times as fast (`extremeConfig`).
+  The settings show it in red ("extreme difficulty"), the start and game-over screens carry an "Extreme" tag, and it
+  keeps its own best time (`hole.best`, where every earlier run was; the joystick's is `hole.best.joystick`).
+- **Walls are planned with the player's controls** (`controlsModel(kind, m)` in `walls.js`, `walls.controls`): how
+  the ship flies on as you are (Extreme: the circle stays; joystick: the stick held) and a pilot for each scheme
+  (`pilot`, `joystickPilot`). `tools/audit.mjs` checks every hole is made with the joystick at sensitivity 1, 5 and
+  10 and that the joystick at sensitivity 1 gets out through escape holes.
+- `?controls=extreme|joystick` overrides the setting for the visit (tests; not saved).
+
+## Flight model (Extreme)
 
 Units: circle position `c` is measured in "circle ranges" (|c| ≤ 1); angles in degrees.
 
