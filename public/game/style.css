@@ -30,7 +30,7 @@ body[data-mode="run"], body[data-mode="hit"] { cursor: none; }
 
 /* ---- HUD: never touched by camera effects */
 #hud { position: fixed; inset: 0; pointer-events: none; display: none; }
-body[data-mode="run"] #hud, body[data-mode="hit"] #hud { display: block; }
+body[data-mode="run"] #hud, body[data-mode="hit"] #hud, body[data-mode="paused"] #hud { display: block; }
 
 #cross { position: absolute; left: 50%; top: 50%; width: var(--cross); height: var(--cross);
          transform: translate(-50%, -50%); }
@@ -88,6 +88,9 @@ body.touch .pad { display: flex; }
 .best.new { color: #f2d27a; }
 
 #over { background: radial-gradient(ellipse at 50% 50%, rgba(1, 2, 5, 0.62) 0%, rgba(1, 2, 5, 0.8) 100%); }
+#paused { background: radial-gradient(ellipse at 50% 50%, rgba(1, 2, 5, 0.35) 0%, rgba(1, 2, 5, 0.6) 100%); }
+#paused .label { color: #e6eaf3; font-size: clamp(16px, calc(var(--u) * 3.6), 26px); letter-spacing: 0.4em; padding-left: 0.4em;
+                 text-transform: uppercase; }
 #over .label { font-size: clamp(12px, calc(var(--u) * 2.4), 16px); letter-spacing: 0.3em; text-transform: uppercase; }
 #over .time { color: #e6eaf3; font: 300 clamp(48px, calc(var(--u) * 14), 120px)/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
               font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }

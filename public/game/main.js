@@ -35,7 +35,13 @@ ui.setupSettings(settings, (s) => {
 
 // ---- renderer, scene, camera (the camera never uses lookAt: orientation is a quaternion turned by pitch/yaw)
 const canvas = document.getElementById('view');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
+} catch (err) {
+  ui.error('Hole needs WebGL, and this browser could not start it. Try another browser, or turn on hardware acceleration.');
+  throw err;
+}
 const quality = new Quality(pixelRatio(set));   // steps the resolution down if frames stay slow
 renderer.setPixelRatio(quality.pixelRatio);
 // No tone mapping: the scene is dark, the yellows stay yellow (Contoo 2), and fog blends linearly into exactly
@@ -159,15 +165,23 @@ async function loadFarLod(manifest) {
   }
 }
 
-// ---- presses: start, restart (never while the settings are open)
+// ---- presses: start, restart, continue after a pause (never while the settings are open)
 function onPress(e) {
   if (e.target?.closest?.('.fs, .gear, #settings') || ui.settingsOpen) return;
   if (mode === 'start') {
     startRun(false);
   } else if (mode === 'over' && modeTime >= RUN.restartLock) {
     startRun(true);
+  } else if (mode === 'paused' && modeTime >= RUN.pauseLock) {
+    setMode('run');
   }
 }
+
+// Leaving the page mid-run (another app, another tab, the phone locked) pauses the run: coming back, space waits
+// until you tap or press a key, instead of flying on into whatever was ahead.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && mode === 'run') setMode('paused');
+});
 
 function startRun(fresh) {
   resetFlight(flight);
@@ -243,6 +257,8 @@ function tick(dt) {
   } else if (mode === 'hit') {
     hitEffect(dt);
     if (modeTime >= RUN.hitSeconds) setMode('over');
+  } else if (mode === 'paused') {
+    sound.run(runTime, 0);   // the rumble rests; nothing moves
   } else if (mode === 'over' && fx) {
     fx.update(dt, move.set(0, 0, 0));  // space holds still behind the game-over screen; the lean eases back
     updateCamera();
@@ -430,6 +446,7 @@ function debugLine(now) {
 
 window.hole = {
   get mode() { return mode; },
+  get modeTime() { return modeTime; },
   get time() { return runTime; },
   get best() { return best; },
   get speed() { return speed; },

@@ -43,7 +43,7 @@ export class UI {
     this.circle = $('circle');
     this.timer = $('timer');
     this.buttons = { left: $('btn-left'), right: $('btn-right'), up: $('btn-up'), down: $('btn-down') };
-    this.screens = { loading: $('loading'), start: $('start'), over: $('over') };
+    this.screens = { loading: $('loading'), start: $('start'), over: $('over'), paused: $('paused') };
     this.edge = $('edge');
     this.leanEdge = $('lean-edge');
     this.leanKey = '';
@@ -54,6 +54,7 @@ export class UI {
     document.body.classList.toggle('touch', touch);
     $('start-prompt').textContent = touch ? 'Tap to start' : 'Press any key or click to start';
     $('over-prompt').textContent = touch ? 'Tap to fly again' : 'Press any key or click to fly again';
+    $('paused-prompt').textContent = touch ? 'Tap to continue' : 'Press any key or click to continue';
     $('start-hint').textContent = touch ? 'Hold the arrows to steer · both thumbs for diagonals'
       : 'W A S D to steer';
     this.setupFullscreen();
@@ -92,7 +93,7 @@ export class UI {
     }
   }
 
-  // mode: 'loading' | 'start' | 'run' | 'hit' | 'over'
+  // mode: 'loading' | 'start' | 'run' | 'hit' | 'over' | 'paused'
   show(mode) {
     document.body.dataset.mode = mode;
     if (mode !== 'start' && mode !== 'over') this.closeSettings();

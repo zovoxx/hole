@@ -324,6 +324,24 @@ async function desktop(browser, base) {
     'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
+  // Contoo 4: leaving the page mid-run pauses it; coming back, space waits for a tap or key
+  const pauseOn = await page.evaluate(() => {
+    const hide = (on) => {
+      if (on) Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+      else delete document.hidden;
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    const t0 = hole.time;
+    hide(true);
+    const paused = hole.mode;
+    hide(false);
+    hole.advance(1);
+    return { paused, after: hole.mode, still: hole.time === t0, shown: document.getElementById('paused').classList.contains('shown') };
+  });
+  await page.keyboard.press('KeyX');
+  const pauseOff = await page.evaluate(() => { hole.advance(0.5); return { mode: hole.mode, t: hole.time }; });
+  check(pauseOn.paused === 'paused' && pauseOn.after === 'paused' && pauseOn.still && pauseOn.shown && pauseOff.mode === 'run',
+    'leaving the page mid-run pauses it; space waits until a key continues the run', JSON.stringify({ ...pauseOn, ...pauseOff }));
   // Contoo 4, the don'ts: no full-screen flash (a blast right in front of you: the glow stays a small part of the
   // view) and no roll on its own (a run with turns, blasts and walls but no massive meteor: the view never rolls)
   const flash = await page.evaluate(() => {
@@ -390,6 +408,18 @@ async function desktop(browser, base) {
   check(ran, 'the real-time clock runs', `t ${g.time.toFixed(2)}`);
   check(problems.length === 0, 'no console errors or failed requests', problems.slice(0, 5).join(' | '));
   await context.close();
+}
+
+// Contoo 4: a browser that can't start WebGL gets a message instead of an endless loading bar.
+async function noWebgl(base) {
+  console.log('desktop without WebGL');
+  const b = await chromium.launch({ args: ['--disable-webgl', '--disable-3d-apis'] });
+  const page = await b.newPage();
+  await page.goto(`${base}/index.html`);
+  const msg = await page.waitForFunction(() => document.getElementById('load-error').textContent, null, { timeout: 30000 })
+    .then((h) => h.jsonValue(), () => '');
+  check(/WebGL/.test(msg), 'without WebGL the loading screen says so (no endless loading bar)', msg);
+  await b.close();
 }
 
 async function center(page, sel) {
@@ -515,6 +545,7 @@ const base = `http://127.0.0.1:${server.address().port}`;
 const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
 try {
   if (!ONLY || ONLY === 'desktop') await desktop(browser, base);
+  if (!ONLY || ONLY === 'desktop') await noWebgl(base);
   if (!ONLY || ONLY === 'mobile') {
     await mobile(browser, base, 'iphone', 'iPhone 13', false);
     await mobile(browser, base, 'iphone', 'iPhone 13', true);

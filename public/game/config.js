@@ -145,6 +145,7 @@ export const RUN = {
   recoilSeconds: 0.25,  // ...dying out with this time constant (you end up ~recoil·speed·recoilSeconds back)
   kickDegrees: 4,
   restartLock: 0.45,    // s after the game-over screen appears before a tap/key restarts (panic taps)
+  pauseLock: 0.3,       // s after coming back to a paused run before a tap/key continues it
   openSeconds: 0.5,     // the view opening again at a restart
   bestKey: 'hole.best',
 };
