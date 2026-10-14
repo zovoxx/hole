@@ -52,7 +52,6 @@ export class UI {
     this.leanKey = '';
     this.pull = $('pull');
     this.pullArm = this.pull.querySelector('.arm');
-    this.pullText = $('pull-text');
     this.pullKey = '';
     this.settingsEl = $('settings');
     this.timerText = '';
@@ -148,24 +147,22 @@ export class UI {
       + `rgba(1,2,5,${(dark * 0.55).toFixed(3)}) ${(inner + 18).toFixed(1)}%, rgba(1,2,5,${dark.toFixed(3)}) ${(iris * 100 + 25).toFixed(1)}%)`;
   }
 
-  // The pull warning: show 0..1 (how much), danger 0..1 (flying on would hit it: red, pulsing, the words), angle =
-  // the meteor's direction on screen (rad, 0 = right, counterclockwise), t = time (s) for the pulse.
+  // The pull warning: show 0..1 (how much), danger 0..1 (how near the forecast hit: amber -> red, faster pulse),
+  // angle = the meteor's direction on screen (rad, 0 = right, counterclockwise), t = time (s) for the pulse.
   setPullWarning(show, danger, angle, t) {
     const c = PULL_WARNING;
     const hz = c.pulseHz[0] + (c.pulseHz[1] - c.pulseHz[0]) * danger;
     const pulse = danger > 0.02 ? 0.6 + 0.4 * Math.sin(2 * Math.PI * hz * t) : 1;
-    const o = Math.round(Math.min(1, show) * pulse * 100) / 100;
+    const o = Math.round(Math.min(1, show) * c.opacity * pulse * 100) / 100;
     const mix = (i) => Math.round(c.amber[i] + (c.red[i] - c.amber[i]) * danger);
     const color = `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
     const deg = Math.round((-angle * 180) / Math.PI);   // CSS rotates clockwise
-    const text = Math.round(Math.min(1, danger * 2.2) * pulse * 100) / 100;
-    const key = `${o}|${color}|${deg}|${text}`;
+    const key = `${o}|${color}|${deg}`;
     if (key === this.pullKey) return;
     this.pullKey = key;
     this.pull.style.opacity = String(o);
     this.pull.style.setProperty('--pc', color);
     this.pullArm.style.transform = `rotate(${deg}deg)`;
-    this.pullText.style.opacity = String(text);
   }
 
   // The darker screen edge on a massive meteor's side: amount 0..1, angle = its direction on screen (rad, 0 =

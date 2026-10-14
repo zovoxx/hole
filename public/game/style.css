@@ -45,18 +45,13 @@ body[data-mode="run"] #hud, body[data-mode="hit"] #hud, body[data-mode="paused"]
           box-shadow: 0 0 8px rgba(140, 170, 255, 0.25), inset 0 0 6px rgba(140, 170, 255, 0.15);
           transform: translate(-50%, -50%); will-change: transform; }
 
-/* the pull warning: chevrons just outside the circle's range pointing at a massive meteor that pulls you; red and
-   pulsing (driven from ui.js, never a CSS animation) when flying on would hit it */
+/* the pull warning: chevrons just outside the circle's range pointing at a massive meteor you would hit if you flew
+   on; amber -> red and pulsing as the hit nears (driven from ui.js, never a CSS animation) */
 #pull { position: absolute; left: 50%; top: 50%; width: 0; height: 0; opacity: 0; --pc: rgb(255, 186, 90); }
 #pull .arm { position: absolute; left: 0; top: 0; width: 0; height: 0; will-change: transform; }
-#pull svg { position: absolute; left: calc(var(--range, 100px) + var(--circle) * 0.7); top: calc(var(--u) * -4);
-            width: calc(var(--u) * 21); height: calc(var(--u) * 8); fill: none; stroke: var(--pc); stroke-width: 3.6;
-            stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px var(--pc)); }
-#pull-text { position: absolute; left: 50%; top: calc(50% + var(--range, 100px) + var(--circle) + var(--u) * 2); margin: 0;
-             transform: translateX(-50%); white-space: nowrap; opacity: 0; color: rgb(255, 90, 60);
-             font-size: clamp(13px, calc(var(--u) * 3.2), 22px); font-weight: 600; letter-spacing: 0.3em; padding-left: 0.3em;
-             text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 60, 30, 0.8), 0 0 2px rgba(0, 0, 0, 0.9); }
-
+#pull svg { position: absolute; left: calc(var(--range, 100px) + var(--circle) * 0.7); top: calc(var(--u) * -3);
+            width: calc(var(--u) * 16); height: calc(var(--u) * 6); fill: none; stroke: var(--pc); stroke-width: 3;
+            stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px var(--pc)); }
 #timer { position: absolute; left: 50%; top: max(calc(var(--u) * 3), env(safe-area-inset-top));
          transform: translateX(-50%); color: var(--ink);
          font: 500 clamp(17px, calc(var(--u) * 4.4), 36px)/1 ui-monospace, "SF Mono", Menlo, Consolas, monospace;

@@ -222,11 +222,13 @@
     `audit` (above). All pass. The pop-in check in `test_world` counted a big rock's moon arriving at fade 0 just
     inside its distance line (seen 2 times in 80 runs, invisible in the fog); its line moved out by one fade band.
 
-- **Pull warning** (2026-10-14, owner's wish: being pulled into a massive meteor was too unexpected). As soon as a
-  massive meteor pulls you, amber chevrons next to the cross point at it. If flying on as you are would hit it within
-  4 s (a forecast with your own controls and the pull), they turn red and pulse, the screen edge on its side glows
-  red, "Pulled in · steer away" shows under the cross and a beep repeats faster the closer the hit. Steer away and
-  the red goes. Tests in `test_world` and `test_game`; all pass. Screens checked on PC and phone.
+- **Pull warning** (2026-10-14, owner's wish: being pulled into a massive meteor was too unexpected; then "too easy,
+  make it balanced, they should be a threat"). Nothing while you are only pulled (rumble, lean and dark edge as
+  before). Only when flying on as you are would hit it within 2.5 s: small chevrons next to the cross point at it,
+  faint amber at first, growing, red and pulsing as the hit nears; the screen edge on its side reddens a little; a
+  soft beep repeats in the last part. React at the first faint sign and you get out (even with Extreme); at half red
+  it is usually too late. (The first version, amber for any pull, 4 s ahead, "Pulled in · steer away" and a louder
+  beep, was too easy.) Tests in `test_world` and `test_game`; all pass. Checked on PC and phone.
 
 ## Next
 
@@ -294,9 +296,9 @@
     60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
     direction", never "you can't get out").
 
-- Pull warning judgement calls (tell me if any is wrong): it is a HUD warning (chevrons, words, a beep) on top of the
-  design's "only cross, circle, timer, buttons"; it shows amber for any pull and red only when a hit is forecast
-  within 4 s; the beep's level and pitch are a first guess (Settings → Sounds turns it down with the rest).
+- Pull warning judgement calls (tell me if any is wrong): it is a HUD cue (small chevrons and a soft beep) on top of
+  the design's "only cross, circle, timer, buttons", only for a hit forecast within 2.5 s. Tune it in `PULL_WARNING`
+  (`horizon` = how early, `opacity`, `edgeRed`, `beepFrom`) and `SOUND.beep`.
 
 - Controls judgement calls (tell me if any is wrong):
   - The joystick is a floating stick (wherever your thumb lands), not a fixed one in a corner; the stick's base

@@ -325,17 +325,31 @@ async function desktop(browser, base) {
     'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
-  // the pull warning (owner's wish after Contoo 4): a massive meteor you would be pulled into: red chevrons by the
-  // cross point at it, the words show, it beeps; steer away (at once) and the danger goes
+  // the pull warning (owner's wish after Contoo 4, a late threat cue): nothing while only pulled; once flying on would
+  // hit it within 2.5 s, chevrons by the cross point at it, growing and reddening, and it beeps; steer away and it goes
   const warned = await page.evaluate(() => {
     hole.field.autoMassive = false;   // (no other massive meteor during this)
     hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
     const beeps0 = hole.sound.state.sfx.beep ?? 0;
-    const m = hole.spawnMassive({ dist: 190, offAxis: 12, phi: 0.6, s: 24, still: true });
-    hole.advance(0.7);
     const op = (id) => Number(getComputedStyle(document.getElementById(id)).opacity);
+    const clear = (x) => {
+      hole.field.remove(x);
+      for (const r of [...hole.field.rocks]) if (r.host === x || r.noGrav) hole.field.remove(r);
+    };
+    // pulled by one beside you that you would not hit: nothing shows
+    const side = hole.spawnMassive({ dist: 160, offAxis: 60, phi: 0.6, s: 20, still: true });
+    hole.advance(0.4);
+    const quiet = { strength: hole.pull.strength, tHit: hole.warning.tHit, pull: op('pull') };
+    clear(side);
+    hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
+    hole.advance(2);
+    // one ahead you would be pulled into: the first sign is faint
+    const m = hole.spawnMassive({ dist: 230, offAxis: 12, phi: 0.6, s: 24, still: true });
+    for (let i = 0; i < 300 && hole.warning.danger < 0.05; i++) hole.advance(1 / 60);
+    const first = { danger: hole.warning.danger, pull: op('pull') };   // the first sign: faint
+    hole.advance(0.25);   // (a moment to react)
     const local = m.p.clone().applyQuaternion(hole.q.invert());
-    const a = { danger: hole.warning.danger, tHit: hole.warning.tHit, pull: op('pull'), text: op('pull-text'),
+    const a = { quiet, first, danger: hole.warning.danger, tHit: hole.warning.tHit, pull: op('pull'),
                 angle: hole.warning.angle, toward: Math.atan2(local.y, local.x), beeps: (hole.sound.state.sfx.beep ?? 0) - beeps0 };
     // hold the circle hard away from it (Extreme controls here)
     const g = Math.hypot(local.x, local.y);
@@ -343,8 +357,7 @@ async function desktop(browser, base) {
     hole.flight.cy = -local.y / g;
     hole.advance(2);
     const b = { danger: hole.warning.danger, show: hole.warning.show, mode: hole.mode };
-    hole.field.remove(m);
-    for (const r of [...hole.field.rocks]) if (r.host === m || r.noGrav) hole.field.remove(r);
+    clear(m);
     hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
     hole.advance(1.5);
     hole.field.autoMassive = true;
@@ -354,9 +367,11 @@ async function desktop(browser, base) {
 
   });
   const dAngle = Math.abs(Math.atan2(Math.sin(warned.a.angle - warned.a.toward), Math.cos(warned.a.angle - warned.a.toward)));
-  check(warned.a.danger > 0.45 && warned.a.tHit < 4 && warned.a.pull > 0.05 && warned.a.text > 0.05 && dAngle < 0.3 && warned.a.beeps >= 1
+  check(warned.a.quiet.strength > 0.02 && !(warned.a.quiet.tHit < 100) && warned.a.quiet.pull === 0
+        && warned.a.first.pull < 0.2 && warned.a.danger > warned.a.first.danger && warned.a.tHit < 2.5
+        && warned.a.pull > 0 && dAngle < 0.3
         && warned.b.danger < 0.05 && warned.b.mode === 'run' && warned.after.show === 0 && warned.after.pull === 0,
-  'pulled into a massive meteor: red chevrons point at it, the words show, it beeps; steering away clears the danger; gone, all gone',
+  'pull warning: nothing while only pulled; a hit forecast within 2.5 s: faint chevrons pointing at it, growing; steering away at once clears it',
   JSON.stringify(warned));
   // Contoo 4: leaving the page mid-run pauses it; coming back, space waits for a tap or key
   const pauseOn = await page.evaluate(() => {

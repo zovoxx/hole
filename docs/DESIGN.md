@@ -152,10 +152,11 @@ always at least one gap, sometimes more, wide enough to get through with the hea
 
 ### The pull warning (owner's wish after Contoo 4)
 
-Being pulled into a massive meteor must never come as a surprise. As soon as one pulls you, chevrons next to the
-cross point at it (amber). If flying on as you are would take you into it within a few seconds, they turn red and
-pulse, the screen edge on its side glows red, "Pulled in · steer away" shows under the cross and a beep repeats,
-faster the closer the hit. Steer away and the red goes; the amber stays while it still pulls.
+Being pulled into a massive meteor must not come out of nowhere, but it stays a real threat (a first, louder
+version made it too easy). Only when flying on as you are would take you into it within about 2.5 s: small amber
+chevrons next to the cross point at it, faint at first, growing, turning red and pulsing faster as the hit nears;
+the screen edge on its side reddens a little; a soft beep repeats in the last part. React at the first faint sign
+and you get away; wait until it is red and it is usually too late.
 
 ### Camera while pulled (stronger with stronger pull)
 

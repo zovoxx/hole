@@ -290,12 +290,14 @@ export const SHAKE = {
   smooth: 0.12,           // s: amplitudes glide, never jump
 };
 
-// The pull warning (owner's wish after Contoo 4: being pulled into a massive meteor was too unexpected). As soon as
-// one pulls you (strength > show), chevrons by the cross point at it, amber; if flying on as you are would hit it
-// within `horizon` s (gravity.js pullForecast), they turn red and pulse, the screen edge on its side turns red, the
-// words "Pulled in · steer away" show under the cross and a beep repeats faster the closer the hit.
-export const PULL_WARNING = { show: 0.06, horizon: 4, every: 3, amber: [255, 186, 90], red: [255, 58, 38],
-                              pulseHz: [1.5, 6], beepGap: [0.6, 0.14] };   // s between beeps: just in danger ... about to hit
+// The pull warning (owner's wish after Contoo 4: being pulled into a massive meteor was too unexpected; then "too
+// easy, make it balanced: they should be a threat"). Nothing while you are only pulled (the rumble, lean and dark
+// edge tell that). Only when flying on as you are would hit it within `horizon` s (gravity.js pullForecast): faint
+// amber chevrons by the cross point at it, growing and turning red as the hit nears (danger = 1 - time / horizon),
+// pulsing faster; the edge on its side reddens a little (edgeRed); past beepFrom a soft beep repeats, faster.
+export const PULL_WARNING = { horizon: 2.5, every: 3, opacity: 0.8, amber: [255, 186, 90], red: [255, 58, 38],
+                              pulseHz: [1.2, 5], edgeRed: 0.6, beepFrom: 0.25,
+                              beepGap: [0.7, 0.2] };   // s between beeps: at beepFrom ... about to hit
 
 // Synthesized sounds (no files) and the settings.
 // Levels measured offline against the music (loops at -21 ... -18 dB RMS, peaks -11 ... -5 dB): a near boom and the
@@ -306,7 +308,7 @@ export const SOUND = {
   boom: { gain: 1.45, range: 330, near: 40 },  // m: full loudness inside `near`, gone at `range`
   rumble: { gain: 0.35 },
   crash: { gain: 1.5 },
-  beep: { gain: 0.32, hz: 620 },               // the pull warning (PULL_WARNING)
+  beep: { gain: 0.2, hz: 620 },                // the pull warning (PULL_WARNING)
 };
 export const SETTINGS = {
   key: 'hole.settings',

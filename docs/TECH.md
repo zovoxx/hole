@@ -245,16 +245,19 @@ As built in Contoo 2 (`gravity.js`, `world.js`, values in `GRAVITY`):
 
 - Forecast (`pullForecast` in `gravity.js`, every 3rd frame while a massive meteor exists): flies on as you are (the
   chosen controls held as now: `walls.controls`, so the Extreme circle stays, the joystick stick stays) with the pull
-  and the drift, 1/20 s steps, for `PULL_WARNING.horizon` (4 s); the meteors in straight lines. A hit = closer than
+  and the drift, 1/20 s steps, for `PULL_WARNING.horizon` (2.5 s; a first version with 4 s, amber chevrons for any
+  pull, words and a louder beep made it too easy); the meteors in straight lines. A hit = closer than
   its collision radius × size + the player's radius. Cost: ~80 steps per massive meteor.
-- Show (`main.js pullWarning`, `ui.setPullWarning`): chevrons just outside the circle's range, rotated toward the
-  meteor you would hit (else the one pulling hardest; its direction on screen after the lean). Amber as soon as the
-  pull passes `show` (0.06); a forecast hit makes it red at once (danger 0.45 … 1, closer = redder), pulsing 1.5 →
-  6 Hz (driven from JS, no CSS animation), the lean's dark edge on that side turns deep red, "Pulled in · steer
-  away" shows under the cross, and `Sfx.beep` (a falling 620 Hz triangle blip, `SOUND.beep`) repeats every 0.6 →
-  0.14 s (`sound.warning`). It is HUD (DOM above the canvas): it never shakes or rolls. Off outside a run.
+- Show (`main.js pullWarning`, `ui.setPullWarning`): nothing while you are only pulled. A forecast hit: danger = 1 −
+  time to the hit / horizon (0 … 1). Small chevrons just outside the circle's range point at that meteor (its
+  direction on screen after the lean), opacity 0.8 × danger, amber → red, pulsing 1.2 → 5 Hz (driven from JS, no
+  CSS animation); the lean's dark edge on that side reddens (0.6 × danger); past danger 0.25 `Sfx.beep` (a soft
+  falling 620 Hz blip, `SOUND.beep` gain 0.2) repeats every 0.7 → 0.2 s (`sound.warning`). HUD (DOM above the
+  canvas): it never shakes or rolls. Off outside a run. Reacting at the first faint sign (~2.3 s) gets out with
+  Extreme; at half red (~1.2 s) it is usually too late (`test_game`).
 - Tests: `test_world` (the forecast: into one ahead in a few seconds, none to the side, none holding away),
-  `test_game` (red chevrons pointing at it, the words, beeps; steering away clears the danger; gone, all gone).
+  `test_game` (nothing while only pulled; a forecast hit: faint chevrons pointing at it, growing; steering away at
+  the first sign clears it; gone, all gone).
 
 ## Walls
 

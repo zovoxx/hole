@@ -305,12 +305,13 @@ function tick(dt) {
   ui.setCircle(flight.cx, flight.cy);
   ui.setTimer(runTime);
   ui.setPullWarning(warn.show, warn.danger, warn.angle, runTime);
-  if (fx) ui.setLeanEdge(fx.side.amount, warn.danger > 0.02 ? warn.angle : fx.side.angle, SHAKE.edge, warn.danger);
+  if (fx) ui.setLeanEdge(fx.side.amount, warn.danger > 0.02 ? warn.angle : fx.side.angle, SHAKE.edge,
+                         warn.danger * PULL_WARNING.edgeRed);
 }
 
-// The pull warning (owner's wish after Contoo 4): as soon as a massive meteor pulls you, chevrons by the cross point
-// at it; if flying on as you are would hit it within PULL_WARNING.horizon s, they turn red and pulse, the edge on
-// its side turns red, the words show and a beep repeats (sound.warning), faster the closer the hit.
+// The pull warning (owner's wish after Contoo 4, then made a late threat cue, not a guide): only if flying on as you
+// are would hit a massive meteor within PULL_WARNING.horizon s, chevrons by the cross point at it, faint amber at
+// first, red and pulsing as the hit nears; the edge on its side reddens a little; a soft beep (sound.warning).
 function pullWarning(dt) {
   const W = PULL_WARNING;
   const ms = field.massives;
@@ -332,13 +333,11 @@ function pullWarning(dt) {
       if (k > best) { best = k; m = x; }
     }
   }
-  // a forecast hit is red at once (0.45), redder and faster the closer it is
-  const target = warn.tHit < W.horizon ? 0.45 + 0.55 * (1 - warn.tHit / W.horizon) : 0;
-  warn.danger += (target - warn.danger) * (1 - Math.exp(-dt / (target > warn.danger ? 0.08 : 0.35)));
+  // only a forecast hit shows: faint at first, stronger and redder the closer it is
+  const target = warn.tHit < W.horizon ? 1 - warn.tHit / W.horizon : 0;
+  warn.danger += (target - warn.danger) * (1 - Math.exp(-dt / (target > warn.danger ? 0.1 : 0.35)));
   if (warn.danger < 0.002) warn.danger = 0;
-  const shown = pull.strength > W.show ? Math.min(1, 0.35 + 0.65 * ((pull.strength - W.show) / 0.3)) : 0;
-  warn.show += (Math.max(shown, warn.danger) - warn.show) * (1 - Math.exp(-dt / 0.15));
-  if (warn.show < 0.004) warn.show = 0;
+  warn.show = warn.danger;
   if (m) {
     local.copy(m.p).applyQuaternion(qInv.copy(q).invert());
     warn.angle = Math.atan2(local.y, local.x) - (fx?.lean ?? 0);   // on screen (the lean turns the view)

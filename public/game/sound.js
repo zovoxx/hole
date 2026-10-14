@@ -114,17 +114,18 @@ export class GameSound {
     }
   }
 
-  // The pull warning (danger 0..1, dt s): beeps, faster the closer the hit; the first one at once.
+  // The pull warning (danger 0..1, dt s): past PULL_WARNING.beepFrom a soft beep, faster the closer the hit.
   warning(danger, dt) {
-    if (danger <= 0.02) {
+    if (danger <= PULL_WARNING.beepFrom) {
       this.warnIn = 0;
       return;
     }
     this.warnIn = (this.warnIn ?? 0) - dt;
     if (this.warnIn > 0) return;
     const [slow, fast] = PULL_WARNING.beepGap;
-    this.warnIn = slow + (fast - slow) * danger;
-    if (this.unlocked) this.sfx.beep(0.55 + 0.45 * danger);
+    const k = (danger - PULL_WARNING.beepFrom) / (1 - PULL_WARNING.beepFrom);
+    this.warnIn = slow + (fast - slow) * k;
+    if (this.unlocked) this.sfx.beep(0.5 + 0.5 * k);
   }
 
   whoosh(k, pan, speed) {

@@ -429,7 +429,7 @@ console.log('gravity');
     return pullForecast(p.field.massives, { f: p.f, q: p.q, drift: p.drift, speed: 40, controls: controlsModel(), horizon: 4 }).tHit;
   };
   const near = at(10);
-  const side = at(55);
+  const side = at(75);
   const held = at(10, true);
   check(near > 2 && near < 4 && side === Infinity && held === Infinity,
     'pull warning forecast: into it ahead in a few seconds, none far to the side, none holding away',
