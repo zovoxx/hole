@@ -376,6 +376,25 @@ export class Sfx {
     this.stats.crash++;
   }
 
+  // The pull warning: a short falling blip (level 0..1). cfg.beep = { gain, hz }.
+  beep(level = 1) {
+    const c = this.ctx;
+    const t = c.currentTime;
+    const { gain = 0.3, hz = 620 } = this.cfg.beep ?? {};
+    const o = c.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(hz, t);
+    o.frequency.exponentialRampToValueAtTime(hz * 0.78, t + 0.1);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(0.001, gain * level), t + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    o.connect(g).connect(this.out);
+    o.start(t);
+    o.stop(t + 0.14);
+    this.stats.beep = (this.stats.beep ?? 0) + 1;
+  }
+
   // level 0..1, pan, bright 0..1 (near = bright), dur s
   blast(level, pan, bright, dur) {
     const c = this.ctx;

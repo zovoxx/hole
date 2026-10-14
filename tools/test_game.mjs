@@ -325,6 +325,39 @@ async function desktop(browser, base) {
     'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
+  // the pull warning (owner's wish after Contoo 4): a massive meteor you would be pulled into: red chevrons by the
+  // cross point at it, the words show, it beeps; steer away (at once) and the danger goes
+  const warned = await page.evaluate(() => {
+    hole.field.autoMassive = false;   // (no other massive meteor during this)
+    hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
+    const beeps0 = hole.sound.state.sfx.beep ?? 0;
+    const m = hole.spawnMassive({ dist: 190, offAxis: 12, phi: 0.6, s: 24, still: true });
+    hole.advance(0.7);
+    const op = (id) => Number(getComputedStyle(document.getElementById(id)).opacity);
+    const local = m.p.clone().applyQuaternion(hole.q.invert());
+    const a = { danger: hole.warning.danger, tHit: hole.warning.tHit, pull: op('pull'), text: op('pull-text'),
+                angle: hole.warning.angle, toward: Math.atan2(local.y, local.x), beeps: (hole.sound.state.sfx.beep ?? 0) - beeps0 };
+    // hold the circle hard away from it (Extreme controls here)
+    const g = Math.hypot(local.x, local.y);
+    hole.flight.cx = -local.x / g;
+    hole.flight.cy = -local.y / g;
+    hole.advance(2);
+    const b = { danger: hole.warning.danger, show: hole.warning.show, mode: hole.mode };
+    hole.field.remove(m);
+    for (const r of [...hole.field.rocks]) if (r.host === m || r.noGrav) hole.field.remove(r);
+    hole.flight.cx = hole.flight.cy = hole.flight.wx = hole.flight.wy = 0;
+    hole.advance(1.5);
+    hole.field.autoMassive = true;
+    const after = { show: hole.warning.show, pull: op('pull') };
+    hole.fx.clear();   // (the lean would still be easing back: the next check starts calm)
+    return { a, b, after };
+
+  });
+  const dAngle = Math.abs(Math.atan2(Math.sin(warned.a.angle - warned.a.toward), Math.cos(warned.a.angle - warned.a.toward)));
+  check(warned.a.danger > 0.45 && warned.a.tHit < 4 && warned.a.pull > 0.05 && warned.a.text > 0.05 && dAngle < 0.3 && warned.a.beeps >= 1
+        && warned.b.danger < 0.05 && warned.b.mode === 'run' && warned.after.show === 0 && warned.after.pull === 0,
+  'pulled into a massive meteor: red chevrons point at it, the words show, it beeps; steering away clears the danger; gone, all gone',
+  JSON.stringify(warned));
   // Contoo 4: leaving the page mid-run pauses it; coming back, space waits for a tap or key
   const pauseOn = await page.evaluate(() => {
     const hide = (on) => {

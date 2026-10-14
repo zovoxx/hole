@@ -4,7 +4,7 @@
 // never leaves it by itself, so Safari's fullscreen warning comes up as rarely as possible.
 // Contoo 3: the settings panel (gear on the start and game-over screens: music and sound volume, the debug
 // read-out; taps only, no sliders, nothing reaches the game behind it) and the lean's darker edge.
-import { HUD, RUN, SETTINGS } from './config.js';
+import { HUD, RUN, SETTINGS, PULL_WARNING } from './config.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -50,6 +50,10 @@ export class UI {
     this.edge = $('edge');
     this.leanEdge = $('lean-edge');
     this.leanKey = '';
+    this.pull = $('pull');
+    this.pullArm = this.pull.querySelector('.arm');
+    this.pullText = $('pull-text');
+    this.pullKey = '';
     this.settingsEl = $('settings');
     this.timerText = '';
     this.range = 100;
@@ -85,6 +89,7 @@ export class UI {
     s.setProperty('--circle', `${Math.round(HUD.circleSize * m)}px`);
     s.setProperty('--cross', `${Math.round(HUD.crossSize * m)}px`);
     this.range = HUD.circleRange * m;
+    s.setProperty('--range', `${Math.round(this.range)}px`);
     this.circleXY = [NaN, NaN];
   }
 
@@ -143,12 +148,33 @@ export class UI {
       + `rgba(1,2,5,${(dark * 0.55).toFixed(3)}) ${(inner + 18).toFixed(1)}%, rgba(1,2,5,${dark.toFixed(3)}) ${(iris * 100 + 25).toFixed(1)}%)`;
   }
 
+  // The pull warning: show 0..1 (how much), danger 0..1 (flying on would hit it: red, pulsing, the words), angle =
+  // the meteor's direction on screen (rad, 0 = right, counterclockwise), t = time (s) for the pulse.
+  setPullWarning(show, danger, angle, t) {
+    const c = PULL_WARNING;
+    const hz = c.pulseHz[0] + (c.pulseHz[1] - c.pulseHz[0]) * danger;
+    const pulse = danger > 0.02 ? 0.6 + 0.4 * Math.sin(2 * Math.PI * hz * t) : 1;
+    const o = Math.round(Math.min(1, show) * pulse * 100) / 100;
+    const mix = (i) => Math.round(c.amber[i] + (c.red[i] - c.amber[i]) * danger);
+    const color = `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
+    const deg = Math.round((-angle * 180) / Math.PI);   // CSS rotates clockwise
+    const text = Math.round(Math.min(1, danger * 2.2) * pulse * 100) / 100;
+    const key = `${o}|${color}|${deg}|${text}`;
+    if (key === this.pullKey) return;
+    this.pullKey = key;
+    this.pull.style.opacity = String(o);
+    this.pull.style.setProperty('--pc', color);
+    this.pullArm.style.transform = `rotate(${deg}deg)`;
+    this.pullText.style.opacity = String(text);
+  }
+
   // The darker screen edge on a massive meteor's side: amount 0..1, angle = its direction on screen (rad, 0 =
-  // right, counterclockwise).
-  setLeanEdge(amount, angle, max) {
-    const a = Math.round(amount * max * 100) / 100;
+  // right, counterclockwise); red 0..1 turns it red (the pull warning's danger).
+  setLeanEdge(amount, angle, max, red = 0) {
+    const a = Math.max(Math.round(amount * max * 100) / 100, Math.round(red * 0.6 * 100) / 100);
+    const r = Math.round(red * 10) / 10;
     const deg = Math.round(90 - (angle * 180) / Math.PI);   // CSS: 0deg points up, clockwise
-    const key = a > 0.005 ? `${a}|${deg}` : '0';
+    const key = a > 0.005 ? `${a}|${deg}|${r}` : '0';
     if (key === this.leanKey) return;
     this.leanKey = key;
     if (key === '0') {
@@ -156,8 +182,9 @@ export class UI {
       return;
     }
     this.leanEdge.style.opacity = '1';
-    this.leanEdge.style.background = `linear-gradient(${deg}deg, rgba(0,0,0,0) 30%, rgba(0,0,0,${(a * 0.55).toFixed(2)}) 62%, `
-      + `rgba(0,0,0,${a.toFixed(2)}) 90%)`;
+    const rgb = `${Math.round(110 * r)},${Math.round(6 * r)},0`;   // black, or a deep red
+    this.leanEdge.style.background = `linear-gradient(${deg}deg, rgba(${rgb},0) 30%, rgba(${rgb},${(a * 0.55).toFixed(2)}) 62%, `
+      + `rgba(${rgb},${a.toFixed(2)}) 90%)`;
   }
 
   // ---- settings: settings = { music, sound, debug, controls, sensitivity } (changed in place); onChange(settings)

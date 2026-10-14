@@ -414,6 +414,28 @@ console.log('gravity');
   check(behind.turn < 0.5, 'once it is behind you it lets go', `${behind.turn.toFixed(2)} °/s`);
 }
 {
+  // the pull warning's forecast: flying on into a massive meteor near your path is a hit in a few seconds; one far
+  // to the side is none; holding the circle away from it (Extreme) is none
+  const { pullForecast } = await game('gravity.js');
+  const { controlsModel } = await game('walls.js');
+  const at = (offAxis, away = false) => {
+    const p = stage();
+    const m = p.field.spawnMassive(p.fwd, { dist: 150, offAxis, phi: 0.6, s: 24, still: true });
+    if (away) {
+      const g = Math.hypot(m.p.x, m.p.y);
+      p.f.cx = -m.p.x / g;
+      p.f.cy = -m.p.y / g;
+    }
+    return pullForecast(p.field.massives, { f: p.f, q: p.q, drift: p.drift, speed: 40, controls: controlsModel(), horizon: 4 }).tHit;
+  };
+  const near = at(10);
+  const side = at(55);
+  const held = at(10, true);
+  check(near > 2 && near < 4 && side === Infinity && held === Infinity,
+    'pull warning forecast: into it ahead in a few seconds, none far to the side, none holding away',
+    `${near.toFixed(1)} s, side ${side}, holding away ${held}`);
+}
+{
   // do nothing near a massive meteor in your path: you hit it. Steer through an escape hole: you get out.
   const approach = (escape, t = 0) => {
     const k = knobs(t);

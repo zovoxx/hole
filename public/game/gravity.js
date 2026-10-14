@@ -94,6 +94,47 @@ export function playerPull(massives, fwd, q, drift, cfg = GRAVITY.player) {
   return { gx, gy, strength };
 }
 
+// The pull warning (owner's wish after Contoo 4: being pulled into a massive meteor was too unexpected): flies on as
+// you are (controls = walls.js controlsModel(): the circle or the stick held where it is) with the pull, for up to
+// `horizon` s, and returns the time until you would hit a massive meteor (Infinity if you don't) and which one.
+// The meteors move in straight lines here. f = the flight state, q = where you face, drift = your drift (m/s).
+const _fq = new THREE.Quaternion();
+const _fdq = new THREE.Quaternion();
+const _fax = new THREE.Vector3();
+const _ffwd = new THREE.Vector3();
+const _fP = new THREE.Vector3();
+const _fdrift = new THREE.Vector3();
+const _fdt = new THREE.Vector3();
+const _frel = new THREE.Vector3();
+export function pullForecast(massives, { f, q, drift, speed, controls, horizon = 4, dt = 1 / 20, playerRadius = 0.5 }) {
+  if (!massives.length) return { tHit: Infinity, meteor: null };
+  const ms = massives.map((m) => ({ m, p0: m.p, v: m.v, s: m.s, pull: m.pull, p: new THREE.Vector3(),
+                                    reach: m.s * (m.shape?.collisionRadius ?? 0.8) + playerRadius }));
+  const ff = { ...f };
+  const u = controls.idle(f);
+  _fq.copy(q);
+  _fP.set(0, 0, 0);
+  _fdrift.copy(drift);
+  for (let t = dt; t <= horizon + 1e-9; t += dt) {
+    for (const x of ms) x.p.copy(x.p0).addScaledVector(x.v, t).sub(_fP);   // seen from where you would be
+    _ffwd.set(0, 0, -1).applyQuaternion(_fq);
+    const pull = playerPull(ms, _ffwd, _fq, _fdt);
+    controls.step(ff, u, dt);
+    _fdrift.lerp(_fdt, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
+    const ax = (ff.wy + pull.gy) * DEG * dt;
+    const ay = -(ff.wx + pull.gx) * DEG * dt;
+    const a = Math.hypot(ax, ay);
+    if (a > 0) _fq.multiply(_fdq.setFromAxisAngle(_fax.set(ax / a, ay / a, 0), a)).normalize();
+    _ffwd.set(0, 0, -1).applyQuaternion(_fq);
+    _fP.addScaledVector(_ffwd, speed * dt).addScaledVector(_fdrift, dt);
+    for (const x of ms) {
+      _frel.copy(x.p0).addScaledVector(x.v, t).sub(_fP);
+      if (_frel.length() < x.reach) return { tHit: t, meteor: x.m };
+    }
+  }
+  return { tHit: Infinity, meteor: null };
+}
+
 export function playerRange(m, cfg = GRAVITY.player) {
   return cfg.range[0] + cfg.range[1] * m.s;
 }

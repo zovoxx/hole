@@ -7,7 +7,7 @@
 //   the run time (music.follow: 5-minute cycles that drop back to calm and come back deeper). Game over: it goes
 //   under (low-pass, quieter) and sinks to calm; the next run brings it back from the start of the cycle.
 // - Sounds: the near-miss whoosh, the rumble of a massive meteor's pull, explosion booms, the crash.
-import { MUSIC, SOUND } from './config.js';
+import { PULL_WARNING, MUSIC, SOUND } from './config.js';
 import { Music, Sfx, unlockAudio } from './audio.js';
 import { volumeGain } from './settings.js';
 
@@ -112,6 +112,19 @@ export class GameSound {
       this.music.setDepth(this.music.depth, 0.85, 0.25);
       this.music.setIntensity(1, 3);
     }
+  }
+
+  // The pull warning (danger 0..1, dt s): beeps, faster the closer the hit; the first one at once.
+  warning(danger, dt) {
+    if (danger <= 0.02) {
+      this.warnIn = 0;
+      return;
+    }
+    this.warnIn = (this.warnIn ?? 0) - dt;
+    if (this.warnIn > 0) return;
+    const [slow, fast] = PULL_WARNING.beepGap;
+    this.warnIn = slow + (fast - slow) * danger;
+    if (this.unlocked) this.sfx.beep(0.55 + 0.45 * danger);
   }
 
   whoosh(k, pan, speed) {

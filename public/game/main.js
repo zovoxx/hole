@@ -1,6 +1,7 @@
 // Hole: boot, game states (loading -> start -> run -> hit -> over -> run ...) and the main loop.
 import * as THREE from 'three';
-import { SPACE_COLOR, WORLD, CAMERA, LIGHTS, RUN, GRAVITY, SHAKE, DEEP } from './config.js';
+import { SPACE_COLOR, WORLD, CAMERA, LIGHTS, RUN, GRAVITY, SHAKE, DEEP, PULL_WARNING, FLIGHT } from './config.js';
+import { pullForecast, pullStrength } from './gravity.js';
 import { pickAssetSet, pixelRatio, hasTouch } from './device.js';
 import { loadManifest, loadMeteors } from './loader.js';
 import { loadSprites } from './sprites.js';
@@ -115,6 +116,8 @@ let walls = null;
 let murk = null;
 let fx = null;
 let pull = { gx: 0, gy: 0, strength: 0 };
+// the pull warning: the forecast (every few frames), how close the hit is (0..1, smoothed), how much to show
+const warn = { tHit: Infinity, meteor: null, danger: 0, show: 0, angle: 0, frame: 0 };
 let mode = 'loading';
 let runTime = 0;       // seconds survived this run (the timer)
 let modeTime = 0;      // seconds since the mode began
@@ -274,7 +277,9 @@ function tick(dt) {
     drift.lerp(driftTarget, 1 - Math.exp(-dt / GRAVITY.player.driftSeconds));
     turn(dt, pull.gx, pull.gy);
     const hit = step(dt, { collide: true, run: true });
+    pullWarning(dt);
     sound.run(runTime, pull.strength);
+    sound.warning(warn.danger, dt);
     if (hit) onHit(hit);
   } else if (mode === 'hit') {
     hitEffect(dt);
@@ -293,9 +298,51 @@ function tick(dt) {
     ui.setEdge(0.35 + 0.65 * e, 0.92 * (1 - e));
   }
 
+  if (mode !== 'run' && (warn.show || warn.danger)) {
+    warn.show = warn.danger = 0;
+    sound.warning(0, dt);
+  }
   ui.setCircle(flight.cx, flight.cy);
   ui.setTimer(runTime);
-  if (fx) ui.setLeanEdge(fx.side.amount, fx.side.angle, SHAKE.edge);
+  ui.setPullWarning(warn.show, warn.danger, warn.angle, runTime);
+  if (fx) ui.setLeanEdge(fx.side.amount, warn.danger > 0.02 ? warn.angle : fx.side.angle, SHAKE.edge, warn.danger);
+}
+
+// The pull warning (owner's wish after Contoo 4): as soon as a massive meteor pulls you, chevrons by the cross point
+// at it; if flying on as you are would hit it within PULL_WARNING.horizon s, they turn red and pulse, the edge on
+// its side turns red, the words show and a beep repeats (sound.warning), faster the closer the hit.
+function pullWarning(dt) {
+  const W = PULL_WARNING;
+  const ms = field.massives;
+  if (!ms.length) {
+    warn.tHit = Infinity;
+    warn.meteor = null;
+  } else if (warn.frame++ % W.every === 0) {
+    const f = pullForecast(ms, { f: flight, q, drift, speed, controls: walls.controls, horizon: W.horizon,
+                                 playerRadius: FLIGHT.playerRadius });
+    warn.tHit = f.tHit;
+    warn.meteor = f.meteor;
+  }
+  // which one: the one you would hit, else the one pulling hardest
+  let m = warn.meteor;
+  if (!m) {
+    let best = 0;
+    for (const x of ms) {
+      const k = pullStrength(x) * x.pull;
+      if (k > best) { best = k; m = x; }
+    }
+  }
+  // a forecast hit is red at once (0.45), redder and faster the closer it is
+  const target = warn.tHit < W.horizon ? 0.45 + 0.55 * (1 - warn.tHit / W.horizon) : 0;
+  warn.danger += (target - warn.danger) * (1 - Math.exp(-dt / (target > warn.danger ? 0.08 : 0.35)));
+  if (warn.danger < 0.002) warn.danger = 0;
+  const shown = pull.strength > W.show ? Math.min(1, 0.35 + 0.65 * ((pull.strength - W.show) / 0.3)) : 0;
+  warn.show += (Math.max(shown, warn.danger) - warn.show) * (1 - Math.exp(-dt / 0.15));
+  if (warn.show < 0.004) warn.show = 0;
+  if (m) {
+    local.copy(m.p).applyQuaternion(qInv.copy(q).invert());
+    warn.angle = Math.atan2(local.y, local.x) - (fx?.lean ?? 0);   // on screen (the lean turns the view)
+  }
 }
 
 // Pitch and yaw only: the camera never rolls by itself (the lean is a separate visual roll). The player's turn is
@@ -480,6 +527,7 @@ window.hole = {
   get fwd() { return fwd.clone(); },
   get q() { return q.clone(); },
   get pull() { return pull; },
+  get warning() { return { ...warn, meteor: undefined }; },
   get drift() { return drift.clone(); },
   get lastHit() { return lastHit; },
   get fx() { return fx; },

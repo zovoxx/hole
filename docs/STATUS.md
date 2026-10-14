@@ -222,6 +222,12 @@
     `audit` (above). All pass. The pop-in check in `test_world` counted a big rock's moon arriving at fade 0 just
     inside its distance line (seen 2 times in 80 runs, invisible in the fog); its line moved out by one fade band.
 
+- **Pull warning** (2026-10-14, owner's wish: being pulled into a massive meteor was too unexpected). As soon as a
+  massive meteor pulls you, amber chevrons next to the cross point at it. If flying on as you are would hit it within
+  4 s (a forecast with your own controls and the pull), they turn red and pulse, the screen edge on its side glows
+  red, "Pulled in · steer away" shows under the cross and a beep repeats faster the closer the hit. Steer away and
+  the red goes. Tests in `test_world` and `test_game`; all pass. Screens checked on PC and phone.
+
 ## Next
 
 - **Play it on the deployed site and tell me how it feels** (PHASES Contoo 4 "Done when"): five runs in a row on
@@ -287,6 +293,10 @@
   - Big rocks pull other meteors only weakly (15%), their own moons fully; a massive meteor pulls the field at
     60%. The pull on you is capped so holding against it always wins (the design's "hold the opposite
     direction", never "you can't get out").
+
+- Pull warning judgement calls (tell me if any is wrong): it is a HUD warning (chevrons, words, a beep) on top of the
+  design's "only cross, circle, timer, buttons"; it shows amber for any pull and red only when a hit is forecast
+  within 4 s; the beep's level and pitch are a first guess (Settings → Sounds turns it down with the rest).
 
 - Controls judgement calls (tell me if any is wrong):
   - The joystick is a floating stick (wherever your thumb lands), not a fixed one in a corner; the stick's base

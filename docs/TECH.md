@@ -241,6 +241,21 @@ As built in Contoo 2 (`gravity.js`, `world.js`, values in `GRAVITY`):
   steering through a hole gets you out (39–40 of 40, at the start and at 77 m/s ten minutes in, with a simple
   bang-bang pilot that keeps holding away until it lets go); every hole is clear and on the escape side.
 
+## The pull warning (owner's wish after Contoo 4)
+
+- Forecast (`pullForecast` in `gravity.js`, every 3rd frame while a massive meteor exists): flies on as you are (the
+  chosen controls held as now: `walls.controls`, so the Extreme circle stays, the joystick stick stays) with the pull
+  and the drift, 1/20 s steps, for `PULL_WARNING.horizon` (4 s); the meteors in straight lines. A hit = closer than
+  its collision radius × size + the player's radius. Cost: ~80 steps per massive meteor.
+- Show (`main.js pullWarning`, `ui.setPullWarning`): chevrons just outside the circle's range, rotated toward the
+  meteor you would hit (else the one pulling hardest; its direction on screen after the lean). Amber as soon as the
+  pull passes `show` (0.06); a forecast hit makes it red at once (danger 0.45 … 1, closer = redder), pulsing 1.5 →
+  6 Hz (driven from JS, no CSS animation), the lean's dark edge on that side turns deep red, "Pulled in · steer
+  away" shows under the cross, and `Sfx.beep` (a falling 620 Hz triangle blip, `SOUND.beep`) repeats every 0.6 →
+  0.14 s (`sound.warning`). It is HUD (DOM above the canvas): it never shakes or rolls. Off outside a run.
+- Tests: `test_world` (the forecast: into one ahead in a few seconds, none to the side, none holding away),
+  `test_game` (red chevrons pointing at it, the words, beeps; steering away clears the danger; gone, all gone).
+
 ## Walls
 
 As built in Contoo 3 (`walls.js`, `WALL`, the wall knobs in `DIFFICULTY`):

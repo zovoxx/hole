@@ -150,6 +150,13 @@ A few exploders also blow up on their own far away, so the player learns they ex
 While you are being pulled, extra meteors appear on the escape side (opposite the massive meteor). There is
 always at least one gap, sometimes more, wide enough to get through with the heavy controls.
 
+### The pull warning (owner's wish after Contoo 4)
+
+Being pulled into a massive meteor must never come as a surprise. As soon as one pulls you, chevrons next to the
+cross point at it (amber). If flying on as you are would take you into it within a few seconds, they turn red and
+pulse, the screen edge on its side glows red, "Pulled in · steer away" shows under the cross and a beep repeats,
+faster the closer the hit. Steer away and the red goes; the amber stays while it still pulls.
+
 ### Camera while pulled (stronger with stronger pull)
 
 - A deep, slow rumble shake.
