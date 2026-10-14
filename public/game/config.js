@@ -94,6 +94,7 @@ export const WORLD = {
   fadeBand: 25,         // m: meteors that appear in view do so in the last fadeBand before `radius`...
   fadeSeconds: 1.5,     // ...and fade in (extra fog) over this long
   sideMin: 40,          // m: meteors that appear out of view are never closer than this
+  startClear: 80,       // m: nothing this close when a run starts (a fresh field, or out of view at the first run)
   keepMargin: 15,       // deg past the view's corners where space is kept full; meteors further round are dropped
   maxMeteors: 3000,     // performance cap; past it new rocks spawn bigger instead of more (same on PC and mobile)
   small: { radius: [4, 11] },            // m, log-uniform

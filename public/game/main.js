@@ -167,6 +167,7 @@ function startRun(fresh) {
     openT = 0;
   } else {
     walls.reset();
+    field.clearNear(WORLD.startClear, frustum);
   }
   walls.begin(k);
   field.begin();

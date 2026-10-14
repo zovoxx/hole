@@ -271,19 +271,33 @@ export class MeteorField {
   }
 
   // A fresh field (a new run, or the start screen): the whole cone filled at once (hidden by a screen), with the
-  // first stretch of the path clear.
+  // first stretch of the path clear and nothing within WORLD.startClear (Contoo 4: rocks a few dozen metres to the
+  // side could be turned into less than a second after the view opened).
   reset(fwd, frustum, { speed, attract = false }) {
     this.clear();
     const R = WORLD.radius;
-    const r0 = 20;
+    const r0 = WORLD.startClear;
     const n = Math.round(this.density * this.keepSolid * (R ** 3 - r0 ** 3) / 3);
     for (let i = 0; i < n; i++) {
       dirAround(fwd, Math.acos(1 - Math.random() * (1 - this.cosKeep)), Math.random() * 2 * Math.PI, _v);
       const d = fieldDistance(r0, R, _v, fwd);
-      if (d !== null) this.spawn(_v, d, 1, fwd, { speed, attract, clearPath: true });
+      if (d !== null) this.spawn(_v, d, 1, fwd, { speed, attract, clearPath: true, minDist: r0 });
     }
     this.prevFwd = fwd.clone();
     this.inflowCarry = this.turnCarry = 0;
+  }
+
+  // The first run starts from the start screen's field: rocks near you that are out of view (beside you, past the
+  // view's edge) are taken away, so turning at once never meets a rock you could not have seen. The ones you can see
+  // stay (nothing vanishes in view).
+  clearNear(r0, frustum) {
+    for (let i = this.rocks.length - 1; i >= 0; i--) {
+      const r = this.rocks[i];
+      if (r.p.length() - r.s > r0 || this.visible(r, frustum)) continue;
+      this.release(r);
+      this.rocks[i] = this.rocks[this.rocks.length - 1];
+      this.rocks.pop();
+    }
   }
 
   // The run begins (from the start screen or a restart): the first massive meteor comes after a while.
@@ -365,7 +379,8 @@ export class MeteorField {
   // A new field rock at direction dir (unit) and distance d, faded in by `fade` (0..1). frustum: only spawn it if
   // no part of it is in view. inflow: it arrives through the far cap (a big rock then starts beyond the far edge
   // with its moons). Returns it, or null when it was not placed.
-  spawn(dir, d, fade, fwd, { speed, attract = false, clearPath = false, frustum = null, inflow = false }) {
+  // minDist: its moons are not placed closer to you than this.
+  spawn(dir, d, fade, fwd, { speed, attract = false, clearPath = false, frustum = null, inflow = false, minDist = 0 }) {
     const big = this.groups.big.length && Math.random() < WORLD.big.share;
     const s = logUniform(big ? WORLD.big.radius : WORLD.small.radius) * this.sizeFactor;
     _o.copy(dir).multiplyScalar(d);
@@ -381,7 +396,8 @@ export class MeteorField {
     if (big) {
       r.far = Math.max(0, d - WORLD.radius) + 10;
       this.makeAttractor(r, GRAVITY.big);
-      this.addMembers(r, GRAVITY.big, { fwd, frustum, clearPath: clearPath || attract, tilt: 50, exploders: false });
+      this.addMembers(r, GRAVITY.big, { fwd, frustum, clearPath: clearPath || attract, tilt: 50, exploders: false,
+                                        minDist: Math.max(minDist, frustum ? WORLD.sideMin : 0) });
     }
     return r;
   }
@@ -412,7 +428,7 @@ export class MeteorField {
 
   // Moons of a big rock or the swarm of a massive meteor, on orbits around it. Members that would be in view
   // (frustum given: out-of-view spawns) or in the clear start path are skipped.
-  addMembers(host, cfg, { fwd, frustum = null, clearPath = false, tilt = 12, exploders = true, normal = null }) {
+  addMembers(host, cfg, { fwd, frustum = null, clearPath = false, tilt = 12, exploders = true, normal = null, minDist = 0 }) {
     const n = randInt(cfg.members);
     const slings = cfg.slingshot ? Math.max(1, Math.round(n * cfg.slingshot)) : 0;
     const plane = normal ?? randomUnit(new THREE.Vector3());
@@ -425,6 +441,7 @@ export class MeteorField {
       _w.copy(host.p).add(o.offset);
       if (frustum && this.inView(_w, size, frustum)) continue;
       if (clearPath && this.inPath(_w, size, fwd)) continue;
+      if (_w.length() < minDist) continue;
       const m = this.makeRock(this.smallType({ exploders }), this.pickShape('small'), _w, size,
                               _w.length() > WORLD.radius ? 0 : host.fade);
       m.v.copy(host.v).add(o.velocity);
