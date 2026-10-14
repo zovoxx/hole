@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Fairness audit (Contoo 4, PHASES "Fairness audit"): is every death the player's own mistake?
+// Fairness and don'ts audit (Contoo 4, PHASES "Fairness audit", "Don'ts audit"): is every death the player's own
+// mistake, and does every don't hold?
 //   1. collision: every rock's collision spheres (manifest) against its real meshes (PC and mobile GLBs): a sphere
 //      poking out of the rock would kill you in empty space
 //   2. walls over the whole difficulty range (0 s ... 20 min): placed, never a hole on your path, every hole made by
@@ -8,7 +9,9 @@
 //   4. whole runs flown by bots (the real field, walls, massive meteors, exploders): for every death, how long the
 //      rock that hit you had been in view and out of the fog before it hit. A rock you could not see coming is the
 //      game's fault, not yours.
-// Usage: node tools/audit_fair.mjs [--quick] [--only collision|walls|escape|bots] [--runs N] [--seed S]
+//   5. the don'ts (DESIGN §13) in whole runs: nothing pops into or out of view, nothing behind you, a rock never
+//      changes once it is there, no difficulty jumps
+// Usage: node tools/audit.mjs [--quick] [--only collision|walls|escape|bots|donts] [--runs N] [--seed S] [--bot name]
 import fs from 'node:fs';
 import path from 'node:path';
 import { THREE, mod, manifest, ROOT, game, fogVisibility, seedRandom } from './sim.mjs';
@@ -359,6 +362,76 @@ function kindOf(r) {
   return `${r.type} (${r.src ?? 'start'})`;
 }
 
+// One run flown by a bot, as main.js plays it. Tracks sightings (rock -> its latest one: a gap of more than 0.25 s
+// starts a new one) and where rocks come from. opts: aspect, maxT, t0 (start at this run time: the difficulty and
+// a field filled at its density), immortal (nothing hits), onFrame(g) after every frame. Returns { g, hit, sighting }.
+function flyRun(bot, { aspect = 16 / 9, maxT = 360, t0 = 0, immortal = false, onFrame = null, wrap = null } = {}) {
+  const g = game({ aspect });
+  // tag where field rocks come from (inflow through the far cap, turn fill, the start)
+  const spawn = g.field.spawn.bind(g.field);
+  g.field.spawn = (dir, d, fade, fwd, opts) => {
+    const r = spawn(dir, d, fade, fwd, opts);
+    if (r) r.src = opts.inflow ? 'inflow' : opts.frustum ? 'turn fill' : 'start';
+    return r;
+  };
+  const makeRock = g.field.makeRock.bind(g.field);
+  g.field.makeRock = (...a) => {
+    const r = makeRock(...a);
+    r.src = null;
+    return r;
+  };
+  g.start();
+  if (t0) {
+    g.runTime = t0;
+    g.k = knobs(t0);
+    g.speed = g.k.speed;
+    g.field.setDifficulty(g.k);
+    g.field.reset(g.fwd, g.frustum, { speed: g.speed });
+    g.walls.reset();
+    g.walls.begin(g.k, t0);
+    g.field.begin();
+  }
+  g.field.testOnly = immortal;
+  wrap?.(g);
+  const seen = new Map();
+  const sighting = (r) => {
+    let s = seen.get(r);
+    if (!s || s.gen !== r.gen) {
+      s = { gen: r.gen, start: null, end: null, dStart: 0, parent: null, first: null, dFirst: 0 };
+      seen.set(r, s);
+    }
+    return s;
+  };
+  // explosion pieces: the warning is the exploder's (its glowing cracks and quickening pulse); remember it
+  const explode = g.field.explode.bind(g.field);
+  g.field.explode = (r, ...a) => {
+    const parent = { ...sighting(r) };
+    const n = g.field.rocks.length;
+    explode(r, ...a);
+    for (const x of g.field.rocks.slice(n)) sighting(x).parent = parent;
+  };
+  const state = {};
+  let hit = null;
+  while (!hit && g.runTime < t0 + maxT) {
+    // who is in sight this frame
+    for (const r of g.field.rocks) {
+      const s = sighting(r);
+      const d = r.p.length();
+      _sph.center.copy(r.p);
+      _sph.radius = r.s;
+      const vis = r.fade * fogVisibility(d - r.s);
+      if (vis >= SEEN_VIS && g.frustum.intersectsSphere(_sph)) {
+        if (s.end === null || g.runTime - s.end > 0.25) { s.start = g.runTime; s.dStart = d; }
+        if (s.first === null) { s.first = g.runTime; s.dFirst = d; }
+        s.end = g.runTime;
+      }
+    }
+    hit = g.step(bot(g, state, seen));
+    onFrame?.(g);
+  }
+  return { g, hit, sighting, state };
+}
+
 if (want('bots')) {
   console.log(`whole runs flown by bots (${RUNS} runs each, up to ${QUICK ? 3 : 6} min)`);
   const maxT = QUICK ? 180 : 360;
@@ -369,57 +442,7 @@ if (want('bots')) {
     if (BOT && name !== BOT) continue;
     for (let run = 0; run < RUNS; run++) {
       const portrait = run % 3 === 2;
-      const g = game({ aspect: portrait ? 9 / 19.5 : 16 / 9 });
-      // tag where field rocks come from (inflow through the far cap, turn fill, the start)
-      const spawn = g.field.spawn.bind(g.field);
-      g.field.spawn = (dir, d, fade, fwd, opts) => {
-        const r = spawn(dir, d, fade, fwd, opts);
-        if (r) r.src = opts.inflow ? 'inflow' : opts.frustum ? 'turn fill' : 'start';
-        return r;
-      };
-      const makeRock = g.field.makeRock.bind(g.field);
-      g.field.makeRock = (...a) => {
-        const r = makeRock(...a);
-        r.src = null;
-        return r;
-      };
-      g.start();
-      // rock -> { gen, start, end, dStart }: its latest sighting (a gap of more than 0.25 s starts a new one)
-      const seen = new Map();
-      const sighting = (r) => {
-        let s = seen.get(r);
-        if (!s || s.gen !== r.gen) {
-          s = { gen: r.gen, start: null, end: null, dStart: 0, parent: null, first: null, dFirst: 0 };
-          seen.set(r, s);
-        }
-        return s;
-      };
-      // explosion pieces: the warning is the exploder's (its glowing cracks and quickening pulse); remember it
-      const explode = g.field.explode.bind(g.field);
-      g.field.explode = (r, ...a) => {
-        const parent = { ...sighting(r) };
-        const n = g.field.rocks.length;
-        explode(r, ...a);
-        for (const x of g.field.rocks.slice(n)) sighting(x).parent = parent;
-      };
-      const state = {};
-      let hit = null;
-      while (!hit && g.runTime < maxT) {
-        // who is in sight this frame
-        for (const r of g.field.rocks) {
-          const s = sighting(r);
-          const d = r.p.length();
-          _sph.center.copy(r.p);
-          _sph.radius = r.s;
-          const vis = r.fade * fogVisibility(d - r.s);
-          if (vis >= SEEN_VIS && g.frustum.intersectsSphere(_sph)) {
-            if (s.end === null || g.runTime - s.end > 0.25) { s.start = g.runTime; s.dStart = d; }
-            if (s.first === null) { s.first = g.runTime; s.dFirst = d; }
-            s.end = g.runTime;
-          }
-        }
-        hit = g.step(bot(g, state, seen));
-      }
+      const { g, hit, sighting, state } = flyRun(bot, { aspect: portrait ? 9 / 19.5 : 16 / 9, maxT });
       if (!hit) {
         deaths.push({ bot: name, t: g.runTime, survived: true });
         continue;
@@ -483,6 +506,91 @@ if (want('bots')) {
     check(n <= blind.length * 0.03, `flying blind (straight on, or turning at random): at most 3% of deaths in sight under ${NEED} s`,
       `${n} of ${blind.length}`);
   }
+}
+
+// ---- 5. the don'ts (DESIGN §13) in whole runs: nobody dies here, so every part of a run comes up
+
+if (want('donts')) {
+  console.log("the don'ts in whole runs (nobody dies: walls, massive meteors, explosions all come up)");
+  const V = 0.05;   // more than this much of a rock showing through the fog (times its fade-in) counts as visible
+  const visibleNow = (g, r) => {
+    _sph.center.copy(r.p);
+    _sph.radius = r.s;
+    return r.fade * fogVisibility(r.p.length() - r.s) > V && g.frustum.intersectsSphere(_sph);
+  };
+  const desc = (g, r) => `${kindOf(r)} ${r.s.toFixed(1)} m at ${r.p.length().toFixed(0)} m, ${g.runTime.toFixed(1)} s`;
+  const st = { frames: 0, popIn: [], popOut: [], swallowed: 0, swallowedOut: 0, behind: [], changed: [], explosions: 0, walls: 0,
+               massives: 0, combos: 0 };
+  const runs = QUICK ? [['nervous', 0, 16 / 9, 60], ['dodger', 300, 9 / 19.5, 60]]
+    : [['nervous', 0, 16 / 9, 150], ['dodger', 0, 9 / 19.5, 150], ['nervous', 240, 9 / 19.5, 150], ['dodger', 300, 16 / 9, 150]];
+  for (const [name, t0, aspect, maxT] of runs) {
+    const known = new Map();   // rock -> { gen, type, s, tint } as it was when it appeared
+    const { g } = flyRun(bots[name], {
+      aspect, t0, maxT, immortal: true,
+      wrap: (g) => {
+        // what leaves the field while you can see it: blown up (an event), swallowed by a massive meteor (inside it), or a pop
+        const release = g.field.release.bind(g.field);
+        g.field.release = (r, gone = false) => {
+          if (!gone && visibleNow(g, r)) {
+            if (r.absorbed) {
+              st.swallowed++;
+              const m = g.field.massives.reduce((a, b) => (!a || b.p.distanceTo(r.p) < a.p.distanceTo(r.p) ? b : a), null);
+              if (m && m.p.distanceTo(r.p) + r.s * 0.5 > m.s) st.swallowedOut++;   // half of it still outside the massive one
+            } else {
+              st.popOut.push(desc(g, r));
+            }
+          }
+          return release(r, gone);
+        };
+        for (const r of g.field.rocks) known.set(r, { gen: r.gen, type: r.type, s: r.s, tint: r.tint.getHex() });
+      },
+      onFrame: (g) => {
+        st.frames++;
+        for (const r of g.field.rocks) {
+          const k = known.get(r);
+          if (!k || k.gen !== r.gen) {
+            // new this frame: never in plain sight (pieces fly out of an explosion you see)
+            if (r.type !== 'frag' && visibleNow(g, r)) st.popIn.push(desc(g, r));
+            known.set(r, { gen: r.gen, type: r.type, s: r.s, tint: r.tint.getHex() });
+          } else if (k.type !== r.type || k.s !== r.s || k.tint !== r.tint.getHex()) {
+            st.changed.push(desc(g, r));
+            known.set(r, { gen: r.gen, type: r.type, s: r.s, tint: r.tint.getHex() });
+          }
+          // behind you and catching up (rocks you fly past drift backward; anything faster is dropped once behind)
+          if (r.type !== 'massive' && r.p.dot(g.fwd) < 0
+              && r.v.dot(g.fwd) - g.speed - g.drift.dot(g.fwd) > 0) st.behind.push(desc(g, r));
+        }
+      },
+    });
+    st.explosions += g.field.stats.explosions;
+    st.walls += g.walls.stats.spawned;
+    st.combos += g.walls.stats.combos;
+    st.massives += g.field.rocks.filter((r) => r.type === 'massive').length;
+  }
+  const show = (list) => list.slice(0, 3).join('; ') + (list.length > 3 ? ` ... (${list.length})` : '');
+  console.log(`       ${(st.frames / 60).toFixed(0)} s flown, ${st.walls} walls (${st.combos} next to a massive meteor), ${st.explosions} explosions`);
+  check(st.popIn.length === 0, 'nothing pops into view (rocks come out of the murk, or out of view)', show(st.popIn) || 'none');
+  check(st.popOut.length === 0 && st.swallowedOut <= Math.max(1, st.swallowed * 0.1),
+    'nothing vanishes in view (only explosions, and rocks swallowed deep inside a massive meteor)',
+    `${show(st.popOut) || 'no pops'}; ${st.swallowed} swallowed in view, ${st.swallowedOut} of them half outside`);
+  check(st.behind.length === 0, 'nothing comes from behind (nothing behind you moves toward you)', show(st.behind) || 'none');
+  check(st.changed.length === 0, 'a rock never changes once it is there (type, size, colour: difficulty reaches new rocks only)',
+    show(st.changed) || 'none');
+  // no visible difficulty jumps: every knob moves by a hair from one frame to the next, over 30 minutes
+  let worst = { k: '', step: 0 };
+  let prev = knobs(0);
+  const span = {};
+  for (const [key, v] of Object.entries(prev)) span[key] = Math.max(1e-9, Math.abs(knobs(1800)[key] - v));
+  for (let t = dt; t <= 1800; t += dt) {
+    const k = knobs(t);
+    for (const key of Object.keys(k)) {
+      const step = Math.abs(k[key] - prev[key]) / span[key];
+      if (step > worst.step) worst = { k: key, step, t };
+    }
+    prev = k;
+  }
+  check(worst.step < 0.002, 'no visible difficulty jumps: no knob moves more than 0.2% of its range in a frame',
+    `largest: ${worst.k} ${(worst.step * 100).toFixed(3)}% at ${worst.t?.toFixed(1)} s`);
 }
 
 console.log(failures ? `${failures} check(s) failed` : 'all checks passed');

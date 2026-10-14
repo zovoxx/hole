@@ -236,8 +236,10 @@ async function desktop(browser, base) {
   const boom = await page.evaluate(() => {
     const before = { ...hole.field.stats };
     const ex = hole.place({ type: 'exploder', dist: 155, s: 6, side: 3, test: false });
+    const gen = ex.gen;
     let lit = null;
-    for (let i = 0; i < 240 && hole.field.stats.explosions === before.explosions; i++) {
+    // (until this one blows up: a far field exploder may go off first, out of view, without pieces)
+    for (let i = 0; i < 240 && ex.gen === gen && hole.field.rocks.includes(ex); i++) {
       hole.advance(1 / 60);
       if (lit === null && ex.fuse >= 0) lit = Math.round(ex.p.length());
     }
@@ -322,6 +324,58 @@ async function desktop(browser, base) {
     'the music loads in the background, plays and follows the run (level 1 -> 4 over the cycle)', JSON.stringify(ms));
   g = await game(page);
   check(g.mode === 'run', 'still flying after the blast and the pull (test rocks only)', g.mode);
+  // Contoo 4, the don'ts: no full-screen flash (a blast right in front of you: the glow stays a small part of the
+  // view) and no roll on its own (a run with turns, blasts and walls but no massive meteor: the view never rolls)
+  const flash = await page.evaluate(() => {
+    const ex = hole.place({ type: 'exploder', dist: 14, s: 8, side: 0, test: false, fuse: true });
+    ex.fuseLen = 0.01;
+    let view = 0;
+    const tanHalf = Math.tan((hole.camera.fov * Math.PI) / 360);
+    for (let i = 0; i < 50; i++) {
+      hole.advance(1 / 60);
+      for (const f of hole.fx.flashes) {
+        if (!f.glow?.visible) continue;
+        const d = f.glow.position.distanceTo(hole.camera.position);
+        view = Math.max(view, f.glow.scale.x / 2 / d / tanHalf);   // glow radius / half the view's height
+      }
+    }
+    return { view, mode: hole.mode };
+  });
+  check(flash.view > 0 && flash.view < 0.4, 'no full-screen flash: a blast 14 m ahead glows over less than 40% of the view height',
+    `glow radius ${(flash.view * 100).toFixed(0)}% of half the view`);
+  const roll = await page.evaluate(() => {
+    hole.field.autoMassive = false;
+    const t0 = hole.time;
+    hole.setRunTime(90);
+    const q = new hole.camera.quaternion.constructor();
+    const up = new hole.camera.up.constructor();
+    const up0 = up.clone();
+    const fwd = up.clone();
+    let max = 0;
+    let n = 0;
+    for (let i = 0; i < 60 * 12; i++) {
+      // hold a direction for a while, then another (keys are simulated through the flight state's circle)
+      if (i % 90 === 0) { const a = i * 1.7; hole.flight.cx = 0.8 * Math.cos(a); hole.flight.cy = 0.8 * Math.sin(a); }
+      hole.advance(1 / 60);
+      if (hole.mode !== 'run') break;
+      // the camera's up against the ship's up (q), seen along the view: the roll
+      q.copy(hole.q);
+      up0.set(0, 1, 0).applyQuaternion(q);
+      up.set(0, 1, 0).applyQuaternion(hole.camera.quaternion);
+      fwd.set(0, 0, -1).applyQuaternion(hole.camera.quaternion);
+      up0.addScaledVector(fwd, -up0.dot(fwd)).normalize();
+      const r = Math.atan2(up0.clone().cross(up).dot(fwd), up0.dot(up)) * 180 / Math.PI;
+      max = Math.max(max, Math.abs(r));
+      n++;
+    }
+    hole.flight.cx = hole.flight.cy = 0;
+    hole.setRunTime(t0);
+    hole.advance(1 / 60);
+    return { max, n, booms: hole.field.stats.explosions, walls: hole.walls.stats.spawned, shake: hole.fx.stats };
+  });
+  check(roll.n > 600 && roll.max < 0.05, 'no roll on its own: 12 s of turns, blasts and walls (no massive meteor), the view never rolls',
+    `max roll ${roll.max.toFixed(3)}° over ${roll.n} frames`);
+  await page.evaluate(() => { hole.field.autoMassive = true; });
   // Contoo 4: the far LOD (PC: the mobile meshes for rocks small on screen) and the asset versions
   const lod = await page.waitForFunction(() => hole.field.groups.small.every((s) => s.far), null, { timeout: 60000 })
     .then(() => page.evaluate(() => { hole.advance(1 / 60); return { far: hole.field.stats.far, drawn: hole.field.stats.drawn }; }),
