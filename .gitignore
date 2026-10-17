@@ -26,3 +26,6 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
+
+# graphify knowledge-graph output (generated locally)
+graphify-out/
