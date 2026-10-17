@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hole Code Graph</title>
+<style>
+:root { --bg:#f6f7f9; --ink:#1d2330; --mute:#6b7385; --edge:rgba(40,50,70,.18); --hi:#1d2330; --card:#fff;
+  --game:#3b6fd8; --hub:#c2410c; --page:#0f8a7a; --test:#8b5cf6; --pipe:#b7791f; --asset:#64748b; --ext:#9aa3b2; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#0d1017; --ink:#e6e9ef; --mute:#8b93a6;
+  --edge:rgba(200,210,230,.16); --hi:#e6e9ef; --card:#161a23; --game:#6b97ff; --hub:#fb8a4c; --page:#2cc5ae;
+  --test:#a98bff; --pipe:#e0a940; --asset:#94a3b8; --ext:#5b6375; } }
+:root[data-theme="dark"] { --bg:#0d1017; --ink:#e6e9ef; --mute:#8b93a6; --edge:rgba(200,210,230,.16); --hi:#e6e9ef;
+  --card:#161a23; --game:#6b97ff; --hub:#fb8a4c; --page:#2cc5ae; --test:#a98bff; --pipe:#e0a940; --asset:#94a3b8; --ext:#5b6375; }
+* { box-sizing:border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--ink); font:14px/1.4 system-ui, sans-serif; overflow:hidden; }
+header { position:absolute; left:16px; top:12px; right:16px; pointer-events:none; }
+h1 { margin:0; font-size:18px; }
+p.sub { margin:2px 0 8px; color:var(--mute); max-width:640px; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--mute); }
+.legend span::before { content:""; display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px;
+  background:var(--c); vertical-align:-1px; }
+#info { position:absolute; left:16px; bottom:16px; max-width:min(420px, calc(100% - 32px)); background:var(--card);
+  border:1px solid var(--edge); border-radius:10px; padding:10px 12px; font-size:13px; }
+#info b { font-size:14px; } #info .m { color:var(--mute); }
+svg { width:100%; height:100%; display:block; touch-action:none; cursor:grab; }
+line { stroke:var(--edge); stroke-width:1.2; }
+line.hi { stroke:var(--hi); stroke-width:1.8; }
+circle { stroke:var(--bg); stroke-width:1.5; cursor:pointer; }
+text { fill:var(--ink); font-size:11px; pointer-events:none; paint-order:stroke; stroke:var(--bg); stroke-width:3px; }
+.dim { opacity:.15; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Hole: code graph</h1>
+  <p class="sub">Arrows point from a file to what it uses. Circle size = lines of code. Tap or hover a node to see
+  its links; drag to move it; scroll or pinch to zoom.</p>
+  <div class="legend">
+    <span style="--c:var(--hub)">config.js (hub)</span><span style="--c:var(--game)">game modules</span>
+    <span style="--c:var(--page)">pages</span><span style="--c:var(--test)">tests &amp; sims</span>
+    <span style="--c:var(--pipe)">asset pipeline (laptop)</span><span style="--c:var(--asset)">assets</span>
+    <span style="--c:var(--ext)">external</span>
+  </div>
+</header>
+<svg id="g"><defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6"
+  orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor" style="color:var(--mute)"/></marker></defs>
+  <g id="vp"><g id="edges"></g><g id="nodes"></g></g></svg>
+<div id="info"><b>Hole</b> <span class="m">— 21 game files, 11 test tools, 10 pipeline scripts</span><br>
+  <span class="m">main.js wires everything; config.js holds every tuning value; sim.mjs runs the game logic in Node
+  for the audits.</span></div>
+<script>
+const N = [
+  // id, group, lines, note
+  ['index.html','page',136,'The page: HUD, menus, import map; loads main.js'],
+  ['style.css','page',0,'HUD and screens'],
+  ['main.js','game',574,'Game loop: run state, camera, tick, pull warning; wires every module'],
+  ['config.js','hub',318,'Every tuning value (WORLD, FLIGHT, GRAVITY, WALL, SOUND, PULL_WARNING, ...)'],
+  ['world.js','game',930,'MeteorField: spawning, density, exploders, explosions, LOD'],
+  ['walls.js','game',586,'Walls with gaps, planned against the pilot'],
+  ['gravity.js','game',236,'Massive meteors: pull, orbits, pullForecast'],
+  ['flight.js','game',89,'Heavy circle (Extreme) and joystick steering'],
+  ['difficulty.js','game',41,'Knobs over run time'],
+  ['meteors.js','game',223,'Meteor meshes, tints, fuse tell, dust ring'],
+  ['space.js','game',254,'Procedural stars, motes, murk'],
+  ['fx.js','game',217,'Flashes, fragments, shake, lean'],
+  ['sprites.js','game',48,'Sprite textures and materials'],
+  ['loader.js','game',75,'Manifest and GLB loading'],
+  ['device.js','game',0,'PC / mobile asset set, pixel ratio, touch'],
+  ['input.js','game',212,'Keys, mouse, touch pads, joystick'],
+  ['ui.js','game',326,'HUD, timer, screens, pull chevrons, best time'],
+  ['settings.js','game',0,'Saved settings, volumes'],
+  ['sound.js','game',146,'GameSound: music level, whooshes, beeps'],
+  ['audio.js','game',495,'Music loops crossfade, synthesized Sfx'],
+  ['quality.js','game',70,'Adaptive resolution'],
+  ['three.js','ext',0,'Pinned in game/vendor/'],
+  ['viewer.html','page',70,'Dev asset viewer'],['viewer.js','page',284,'Dev asset viewer'],
+  ['music.html','page',54,'Dev music page'],['music.js','page',103,'Dev music page'],
+  ['sim.mjs','test',134,'Runs the game logic in Node'],
+  ['audit.mjs','test',637,'Fairness and don’ts audit (bots fly whole runs)'],
+  ['bench.mjs','test',63,'Logic timing'],
+  ['test_world.mjs','test',739,'Logic tests in seconds'],
+  ['test_game.mjs','test',702,'Headless Chromium tests on the game clock'],
+  ['check_danger.mjs','test',175,'Screenshot sheet (Contoo 2)'],
+  ['check_pressure.mjs','test',198,'Screenshot sheet (Contoo 3)'],
+  ['check_ship.mjs','test',138,'Screenshot sheet (Contoo 4)'],
+  ['check_public.py','test',157,'Hosting rules check before every push'],
+  ['comfy_client.py','pipe',369,'ComfyUI API client'],
+  ['gen_queue.py','pipe',148,'Queues Z-Image / Pixal3D / ACE-Step jobs'],
+  ['mesh_tool.py','pipe',171,'Watertight solid + quadric decimate'],
+  ['blender_check.py','pipe',374,'Check renders and extents report'],
+  ['blender_meteors.py','pipe',1136,'Build meteors: remesh, bake, export PC + mobile'],
+  ['music_loop.py','pipe',585,'Cut and level music loops (Blender Python)'],
+  ['make_sprites.py','pipe',224,'Dust / haze / flash sprites'],
+  ['make_icons.py','pipe',62,'App icons'],
+  ['write_manifest.py','pipe',167,'Writes assets/manifest.json'],
+  ['ComfyUI','ext',0,'On the laptop: Z-Image, Pixal3D, ACE-Step'],
+  ['manifest.json','asset',0,'The only file the game reads to find assets'],
+  ['meteors/*.glb','asset',0,'11 rocks + 4 fragments, PC + mobile'],
+  ['textures/*','asset',0,'7 sprites, PC + mobile'],
+  ['music/*','asset',0,'4 intensity loops'],
+  ['icons','asset',0,'App icons'],
+];
+const E = `index.html>main.js index.html>style.css
+main.js>config.js main.js>gravity.js main.js>device.js main.js>loader.js main.js>sprites.js main.js>flight.js
+main.js>difficulty.js main.js>world.js main.js>walls.js main.js>space.js main.js>fx.js main.js>input.js main.js>ui.js
+main.js>settings.js main.js>sound.js main.js>quality.js main.js>three.js
+device.js>config.js difficulty.js>config.js flight.js>config.js fx.js>config.js fx.js>sprites.js fx.js>three.js
+gravity.js>config.js gravity.js>three.js input.js>config.js loader.js>three.js loader.js>manifest.json
+meteors.js>config.js meteors.js>three.js quality.js>config.js settings.js>config.js sound.js>config.js sound.js>audio.js
+sound.js>settings.js space.js>config.js space.js>sprites.js space.js>three.js sprites.js>loader.js sprites.js>three.js
+ui.js>config.js walls.js>config.js walls.js>flight.js walls.js>gravity.js walls.js>difficulty.js walls.js>three.js
+world.js>config.js world.js>meteors.js world.js>difficulty.js world.js>gravity.js world.js>three.js
+viewer.html>viewer.js viewer.js>config.js viewer.js>device.js viewer.js>loader.js viewer.js>meteors.js viewer.js>sprites.js
+viewer.js>audio.js music.html>music.js music.js>config.js music.js>device.js music.js>loader.js music.js>audio.js
+sim.mjs>config.js sim.mjs>flight.js sim.mjs>difficulty.js sim.mjs>world.js sim.mjs>walls.js sim.mjs>gravity.js sim.mjs>meteors.js
+audit.mjs>sim.mjs bench.mjs>sim.mjs
+test_world.mjs>config.js test_world.mjs>difficulty.js test_world.mjs>flight.js test_world.mjs>gravity.js
+test_world.mjs>meteors.js test_world.mjs>quality.js test_world.mjs>walls.js test_world.mjs>world.js
+test_game.mjs>index.html check_danger.mjs>index.html check_pressure.mjs>index.html check_pressure.mjs>walls.js
+check_ship.mjs>index.html check_public.py>manifest.json
+gen_queue.py>comfy_client.py comfy_client.py>ComfyUI blender_meteors.py>blender_check.py blender_meteors.py>mesh_tool.py
+blender_meteors.py>meteors/*.glb music_loop.py>music/* make_sprites.py>textures/* make_icons.py>icons
+write_manifest.py>manifest.json manifest.json>meteors/*.glb manifest.json>textures/* manifest.json>music/*`
+  .trim().split(/\s+/).map((s) => s.split('>'));
+
+const css = getComputedStyle(document.documentElement);
+const color = (g) => `var(--${g})`;
+const ns = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('g'), vp = document.getElementById('vp');
+const W = () => svg.clientWidth, H = () => svg.clientHeight;
+const nodes = N.map(([id, g, lines, note], i) => ({ id, g, lines, note, r: 5 + Math.sqrt(lines || 60) * 0.55,
+  x: W() / 2 + Math.cos(i * 2.4) * 60 * Math.sqrt(i + 1), y: H() / 2 + Math.sin(i * 2.4) * 60 * Math.sqrt(i + 1), vx: 0, vy: 0 }));
+const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+const links = E.map(([a, b]) => ({ s: byId[a], t: byId[b] }));
+const nbr = new Map(nodes.map((n) => [n, new Set([n])]));
+for (const l of links) { nbr.get(l.s).add(l.t); nbr.get(l.t).add(l.s); }
+
+const lineEls = links.map((l) => { const e = document.createElementNS(ns, 'line'); e.setAttribute('marker-end', 'url(#arr)');
+  document.getElementById('edges').appendChild(e); return e; });
+const nodeEls = nodes.map((n) => {
+  const g = document.createElementNS(ns, 'g');
+  const c = document.createElementNS(ns, 'circle'); c.setAttribute('r', n.r); c.style.fill = color(n.g);
+  const t = document.createElementNS(ns, 'text'); t.textContent = n.id; t.setAttribute('x', n.r + 4); t.setAttribute('y', 4);
+  g.append(c, t); document.getElementById('nodes').appendChild(g); n.el = g; return g;
+});
+
+const ANCHOR = { hub: [0, 0], game: [0, 0], ext: [0.4, -0.6], test: [-1, 0], pipe: [1.1, 0.1], asset: [0.65, 0.3], page: [-0.3, 0.8] };
+// force layout (a few hundred steps, then it settles)
+let alpha = 1, drag = null, pan = null, pinned = null;
+function step() {
+  const cx = W() / 2, cy = H() / 2 + 30;
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const a = nodes[i], b = nodes[j]; let dx = b.x - a.x, dy = b.y - a.y; let d2 = dx * dx + dy * dy || 1;
+    const f = 5200 / d2 * alpha, d = Math.sqrt(d2); dx /= d; dy /= d;
+    a.vx -= dx * f; a.vy -= dy * f; b.vx += dx * f; b.vy += dy * f;
+  }
+  for (const { s, t } of links) {
+    const dx = t.x - s.x, dy = t.y - s.y, d = Math.hypot(dx, dy) || 1;
+    const f = (d - 70 - s.r - t.r) * 0.02 * alpha; s.vx += dx / d * f; s.vy += dy / d * f; t.vx -= dx / d * f; t.vy -= dy / d * f;
+  }
+  for (const n of nodes) {
+    const [ax, ay] = ANCHOR[n.g];   // each group drifts to its own side: tests left, pipeline right, pages below
+    n.vx += (cx + ax * 420 - n.x) * 0.012 * alpha; n.vy += (cy + ay * 300 - n.y) * 0.012 * alpha;
+    if (n !== drag) { n.x += n.vx; n.y += n.vy; } n.vx *= 0.6; n.vy *= 0.6;
+  }
+  alpha = Math.max(0.02, alpha * 0.985);
+}
+function draw() {
+  links.forEach(({ s, t }, i) => { const dx = t.x - s.x, dy = t.y - s.y, d = Math.hypot(dx, dy) || 1;
+    const e = lineEls[i]; e.setAttribute('x1', s.x); e.setAttribute('y1', s.y);
+    e.setAttribute('x2', t.x - dx / d * (t.r + 2)); e.setAttribute('y2', t.y - dy / d * (t.r + 2)); });
+  for (const n of nodes) n.el.setAttribute('transform', `translate(${n.x},${n.y})`);
+}
+for (let i = 0; i < 600; i++) step();
+function frame() { if (alpha > 0.021 || drag) { step(); draw(); } requestAnimationFrame(frame); }
+draw(); requestAnimationFrame(frame);
+
+// fit to view
+let view = { k: 1, x: 0, y: 0 };
+function fit() {
+  const xs = nodes.map((n) => n.x), ys = nodes.map((n) => n.y);
+  const x0 = Math.min(...xs) - 30, x1 = Math.max(...xs) + 120, y0 = Math.min(...ys) - 30, y1 = Math.max(...ys) + 30;
+  const top = 110, k = Math.min(W() / (x1 - x0), (H() - top) / (y1 - y0), 1.6);
+  view = { k, x: (W() - (x1 - x0) * k) / 2 - x0 * k, y: top + (H() - top - (y1 - y0) * k) / 2 - y0 * k }; applyView();
+}
+function applyView() { vp.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`); }
+fit();
+
+// highlight and info
+const info = document.getElementById('info');
+function focus(n) {
+  const set = n ? nbr.get(n) : null;
+  nodes.forEach((m) => m.el.classList.toggle('dim', !!set && !set.has(m)));
+  links.forEach((l, i) => { const on = n && (l.s === n || l.t === n);
+    lineEls[i].classList.toggle('hi', !!on); lineEls[i].classList.toggle('dim', !!n && !on); });
+  if (!n) return;
+  const out = links.filter((l) => l.s === n).map((l) => l.t.id), inn = links.filter((l) => l.t === n).map((l) => l.s.id);
+  info.innerHTML = `<b>${n.id}</b>${n.lines ? ` <span class="m">${n.lines} lines</span>` : ''}<br>${n.note}`
+    + (out.length ? `<br><span class="m">uses:</span> ${out.join(', ')}` : '')
+    + (inn.length ? `<br><span class="m">used by:</span> ${inn.join(', ')}` : '');
+}
+nodes.forEach((n) => { n.el.addEventListener('pointerenter', () => !drag && focus(n));
+  n.el.addEventListener('pointerleave', () => !drag && !pinned && focus(null)); });
+
+// drag nodes, pan, zoom
+const pt = (e) => ({ x: (e.clientX - view.x) / view.k, y: (e.clientY - view.y) / view.k });
+svg.addEventListener('pointerdown', (e) => {
+  const n = nodes.find((m) => m.el.contains(e.target));
+  svg.setPointerCapture(e.pointerId);
+  if (n) { drag = n; pinned = n; focus(n); alpha = Math.max(alpha, 0.3); }
+  else { pan = { x: e.clientX - view.x, y: e.clientY - view.y }; pinned = null; focus(null); }
+});
+svg.addEventListener('pointermove', (e) => {
+  if (drag) { const p = pt(e); drag.x = p.x; drag.y = p.y; draw(); }
+  else if (pan) { view.x = e.clientX - pan.x; view.y = e.clientY - pan.y; applyView(); }
+});
+svg.addEventListener('pointerup', () => { drag = null; pan = null; });
+svg.addEventListener('wheel', (e) => { e.preventDefault(); const f = Math.exp(-e.deltaY * 0.0015);
+  view.x = e.clientX - (e.clientX - view.x) * f; view.y = e.clientY - (e.clientY - view.y) * f; view.k *= f; applyView(); },
+  { passive: false });
+addEventListener('resize', fit);
+</script>
+</body>
+</html>
